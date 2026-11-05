@@ -15,7 +15,6 @@ import com.fooddelivery.repository.RestaurantRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Places, looks up and cancels orders (US2.1 to US2.4).
@@ -24,7 +23,6 @@ public class OrderService {
 
     private final RestaurantRepository restaurantRepository;
     private final OrderRepository orderRepository;
-    private final AtomicInteger sequence = new AtomicInteger();
 
     /**
      * @param restaurantRepository used to look up the restaurant and its menu
@@ -66,7 +64,7 @@ public class OrderService {
         List<OrderItem> items = buildItems(restaurant, lines);
         checkDeliveryPolicies(restaurant, address, items);
 
-        Order order = new Order("ORD-" + sequence.incrementAndGet(),
+        Order order = new Order("ORD-" + (orderRepository.findAll().size() + 1),
                 customer, restaurant, items, address);
         orderRepository.save(order);
         return order;

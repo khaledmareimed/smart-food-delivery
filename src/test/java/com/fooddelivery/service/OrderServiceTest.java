@@ -81,7 +81,9 @@ class OrderServiceTest {
 
     @Test
     void orderIdsAreUnique() {
+        when(orderRepository.findAll()).thenReturn(Collections.<Order>emptyList());
         Order first = service.placeOrder(alice, "r1", lines(new OrderLineRequest("m1", 2)), nearAddress);
+        when(orderRepository.findAll()).thenReturn(Collections.singletonList(first));
         Order second = service.placeOrder(alice, "r1", lines(new OrderLineRequest("m1", 2)), nearAddress);
         assertNotEquals(first.getId(), second.getId());
     }

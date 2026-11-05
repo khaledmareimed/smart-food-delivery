@@ -23,4 +23,6 @@ public interface UserRepository {
      * @return the user, or empty if none exists
      */
     Optional<User> findByUsername(String username);
+
+    Optional<User> findById(String id);
 }
