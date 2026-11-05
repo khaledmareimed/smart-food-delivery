@@ -3,6 +3,7 @@ package com.fooddelivery;
 import com.fooddelivery.config.DataSeeder;
 import com.fooddelivery.presentation.ConsoleUI;
 import com.fooddelivery.persistence.Database;
+import com.fooddelivery.repository.SqliteDriverRepository;
 import com.fooddelivery.repository.SqliteOrderRepository;
 import com.fooddelivery.repository.SqliteRestaurantRepository;
 import com.fooddelivery.repository.SqliteUserRepository;
@@ -29,6 +30,10 @@ public final class Main {
         RestaurantRepository restaurants = new SqliteRestaurantRepository(db);
         if (!users.findByUsername("alice").isPresent()) {
             DataSeeder.seed(users, restaurants);
+        }
+        SqliteDriverRepository drivers = new SqliteDriverRepository(db);
+        if (drivers.findAll().isEmpty()) {
+            DataSeeder.seedDrivers(drivers);
         }
 
         ConsoleUI ui = new ConsoleUI(new AuthService(users),

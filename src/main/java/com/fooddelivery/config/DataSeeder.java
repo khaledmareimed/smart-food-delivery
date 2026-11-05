@@ -1,10 +1,12 @@
 package com.fooddelivery.config;
 
+import com.fooddelivery.domain.Driver;
 import com.fooddelivery.domain.Location;
 import com.fooddelivery.domain.MenuItem;
 import com.fooddelivery.domain.Restaurant;
 import com.fooddelivery.domain.Role;
 import com.fooddelivery.domain.User;
+import com.fooddelivery.repository.DriverRepository;
 import com.fooddelivery.repository.RestaurantRepository;
 import com.fooddelivery.repository.UserRepository;
 import com.fooddelivery.util.PasswordHasher;
@@ -47,5 +49,11 @@ public final class DataSeeder {
         restaurants.save(pizza);
         restaurants.save(burger);
         restaurants.save(sushi);
+    }
+
+    public static void seedDrivers(DriverRepository drivers) {
+        drivers.save(new Driver("d1", "Omar", new Location(1, 1), 20));
+        drivers.save(new Driver("d2", "Sara", new Location(6, 6), 40));
+        drivers.save(new Driver("d3", "Ali", new Location(3, 0), 30));
     }
 }
