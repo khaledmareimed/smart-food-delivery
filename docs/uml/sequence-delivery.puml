@@ -1,0 +1,39 @@
+@startuml
+!pragma layout smetana
+title Sequence - Assign Driver and Deliver (US3.1, US3.2, US3.4, US4.1, US4.4)
+autonumber
+actor Manager
+actor Driver
+participant ManagerPanel
+participant DriverPanel
+participant DriverService
+participant OrderService
+participant PaymentService
+participant NotificationService
+participant DriverRepository
+participant OrderRepository
+
+Manager -> ManagerPanel : Auto assign (NEAREST)
+ManagerPanel -> DriverService : assignBestDriver(orderId, "NEAREST")
+DriverService -> DriverRepository : findAll()
+DriverService -> DriverService : keep AVAILABLE drivers\nwhere canDeliver(order)\npick the nearest
+alt no eligible driver
+  DriverService --> ManagerPanel : NoDriverAvailableException
+else
+  DriverService -> DriverRepository : save(driver)  [Busy]
+  DriverService -> OrderRepository : save(order)  [driver set]
+  DriverService -> NotificationService : send(customer, "driver assigned")
+  DriverService -> NotificationService : send(driver, "new delivery")
+end
+
+Driver -> DriverPanel : Picked up
+DriverPanel -> OrderService : updateStatusByDriver(driverId, orderId, OUT_FOR_DELIVERY)
+OrderService -> NotificationService : send(customer, "out for delivery")
+Driver -> DriverPanel : Collect cash
+DriverPanel -> PaymentService : payCash(orderId, amount)
+PaymentService --> DriverPanel : Payment (PAID, change)
+Driver -> DriverPanel : Delivered
+DriverPanel -> OrderService : updateStatusByDriver(driverId, orderId, DELIVERED)
+OrderService -> DriverRepository : save(driver)  [Available]
+OrderService -> NotificationService : send(customer, "delivered")
+@enduml

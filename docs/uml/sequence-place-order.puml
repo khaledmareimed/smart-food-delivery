@@ -1,0 +1,35 @@
+@startuml
+!pragma layout smetana
+title Sequence - Place an Order (US2.1, US2.2, US2.3, US4.2, US4.3, US5.2)
+autonumber
+actor Customer
+participant CustomerPanel
+participant OrderService
+participant RestaurantRepository
+participant PricingService
+participant TimeProvider
+participant OrderRepository
+
+Customer -> CustomerPanel : Place order
+CustomerPanel -> OrderService : placeOrder(customer, restaurantId, lines,\naddress, pricingType, orderType, time)
+alt orderType = SCHEDULED
+  OrderService -> TimeProvider : now()
+  OrderService -> OrderService : time must be in the future
+end
+OrderService -> RestaurantRepository : findById(restaurantId)
+RestaurantRepository --> OrderService : restaurant
+OrderService -> OrderService : restaurant open?\nitems available? quantities valid?
+OrderService -> OrderService : address valid? inside zone?\nminimum order value reached?
+alt any check fails
+  OrderService --> CustomerPanel : InvalidOrderException /\nDeliveryPolicyException
+  CustomerPanel --> Customer : error message
+else all checks pass
+  OrderService -> PricingService : applyPricing(order, pricingType)
+  PricingService -> TimeProvider : now() (peak hours?)
+  PricingService --> OrderService : fee, discount, total
+  OrderService -> OrderService : EXPRESS order: +10 fee
+  OrderService -> OrderRepository : save(order)  [status = Pending]
+  OrderService --> CustomerPanel : order
+  CustomerPanel --> Customer : bill
+end
+@enduml
