@@ -6,6 +6,7 @@ import com.fooddelivery.service.AuthService;
 import com.fooddelivery.service.DriverService;
 import com.fooddelivery.service.NotificationService;
 import com.fooddelivery.service.OrderService;
+import com.fooddelivery.service.PaymentService;
 import com.fooddelivery.service.RestaurantService;
 
 import javax.swing.JFrame;
@@ -24,19 +25,21 @@ public class MainFrame extends JFrame {
     OrderService orderService;
     DriverService driverService;
     NotificationService notificationService;
+    PaymentService paymentService;
 
     private CardLayout cards = new CardLayout();
     private JPanel root = new JPanel(cards);
 
     public MainFrame(AuthService authService, RestaurantService restaurantService,
                      OrderService orderService, DriverService driverService,
-                     NotificationService notificationService) {
+                     NotificationService notificationService, PaymentService paymentService) {
         super("Smart Food Delivery");
         this.authService = authService;
         this.restaurantService = restaurantService;
         this.orderService = orderService;
         this.driverService = driverService;
         this.notificationService = notificationService;
+        this.paymentService = paymentService;
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1000, 650);

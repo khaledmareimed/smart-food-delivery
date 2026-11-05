@@ -3,6 +3,7 @@ package com.fooddelivery.presentation;
 import com.fooddelivery.domain.Driver;
 import com.fooddelivery.domain.Order;
 import com.fooddelivery.domain.OrderStatus;
+import com.fooddelivery.domain.Payment;
 import com.fooddelivery.domain.User;
 
 import javax.swing.BorderFactory;
@@ -18,6 +19,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.math.BigDecimal;
 
 /**
  * Manager screen: all orders, status changes and driver assignment.
@@ -29,7 +31,8 @@ public class ManagerPanel extends JPanel {
     private MainFrame frame;
 
     private DefaultTableModel ordersModel = new DefaultTableModel(
-            new Object[] {"Order", "Customer", "Restaurant", "Status", "Driver", "Items total"}, 0) {
+            new Object[] {"Order", "Customer", "Restaurant", "Status", "Driver", "Pricing", "Total",
+                "Payment"}, 0) {
         private static final long serialVersionUID = 1L;
 
         @Override
@@ -108,7 +111,35 @@ public class ManagerPanel extends JPanel {
     }
 
     void addExtraActions(JPanel actions) {
-        // more actions are added in later sprints
+        JPanel payRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        payRow.setBorder(BorderFactory.createTitledBorder("Payment"));
+        JButton pay = new JButton("Take cash payment");
+        pay.addActionListener(e -> takePayment());
+        payRow.add(pay);
+        actions.add(payRow);
+    }
+
+    private void takePayment() {
+        String id = selectedOrderId();
+        if (id == null) {
+            return;
+        }
+        Order order = frame.orderService.getOrder(id);
+        String input = JOptionPane.showInputDialog(this, "Total is " + order.getTotal()
+                + "\nCash received:");
+        if (input == null) {
+            return;
+        }
+        try {
+            Payment p = frame.paymentService.payCash(id, new BigDecimal(input.trim()));
+            JOptionPane.showMessageDialog(this, "Paid. Change: " + p.getChange());
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Not a valid amount", "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        } catch (RuntimeException ex) {
+            showError(ex);
+        }
+        refresh();
     }
 
     String selectedOrderId() {
@@ -171,7 +202,8 @@ public class ManagerPanel extends JPanel {
         for (Order o : frame.orderService.getAllOrders()) {
             ordersModel.addRow(new Object[] {o.getId(), o.getCustomer().getUsername(),
                     o.getRestaurant().getName(), o.getStatus(),
-                    o.getDriver() == null ? "-" : o.getDriver().getName(), o.getItemsTotal()});
+                    o.getDriver() == null ? "-" : o.getDriver().getName(), o.getPricingType(),
+                    o.getTotal(), o.getPaymentStatus()});
         }
         if (selected >= 0 && selected < ordersModel.getRowCount()) {
             ordersTable.setRowSelectionInterval(selected, selected);
