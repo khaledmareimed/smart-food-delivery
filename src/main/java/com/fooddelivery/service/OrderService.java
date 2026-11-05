@@ -1,6 +1,7 @@
 package com.fooddelivery.service;
 
 import com.fooddelivery.domain.DeliveryAddress;
+import com.fooddelivery.domain.DriverStatus;
 import com.fooddelivery.domain.MenuItem;
 import com.fooddelivery.domain.Order;
 import com.fooddelivery.domain.OrderItem;
@@ -9,7 +10,9 @@ import com.fooddelivery.domain.Restaurant;
 import com.fooddelivery.domain.User;
 import com.fooddelivery.exception.DeliveryPolicyException;
 import com.fooddelivery.exception.InvalidOrderException;
+import com.fooddelivery.exception.InvalidOrderStateException;
 import com.fooddelivery.exception.ResourceNotFoundException;
+import com.fooddelivery.repository.DriverRepository;
 import com.fooddelivery.repository.OrderRepository;
 import com.fooddelivery.repository.RestaurantRepository;
 
@@ -25,6 +28,8 @@ public class OrderService {
     private final RestaurantRepository restaurantRepository;
     private final OrderRepository orderRepository;
     private NotificationService notificationService;
+    private DriverRepository driverRepository;
+    private PricingService pricingService;
 
     /**
      * @param restaurantRepository used to look up the restaurant and its menu
@@ -40,6 +45,14 @@ public class OrderService {
                         OrderRepository orderRepository, NotificationService notificationService) {
         this(restaurantRepository, orderRepository);
         this.notificationService = notificationService;
+    }
+
+    public OrderService(RestaurantRepository restaurantRepository, OrderRepository orderRepository,
+                        NotificationService notificationService, DriverRepository driverRepository,
+                        PricingService pricingService) {
+        this(restaurantRepository, orderRepository, notificationService);
+        this.driverRepository = driverRepository;
+        this.pricingService = pricingService;
     }
 
     /**
@@ -59,6 +72,15 @@ public class OrderService {
      */
     public Order placeOrder(User customer, String restaurantId,
                             List<OrderLineRequest> lines, DeliveryAddress address) {
+        return placeOrder(customer, restaurantId, lines, address, "NORMAL");
+    }
+
+    /**
+     * Same as the other placeOrder but also calculates the bill with the given
+     * pricing type (US4.2, US4.3).
+     */
+    public Order placeOrder(User customer, String restaurantId,
+                            List<OrderLineRequest> lines, DeliveryAddress address, String pricingType) {
         if (customer == null) {
             throw new InvalidOrderException("A customer is required");
         }
@@ -74,6 +96,9 @@ public class OrderService {
 
         Order order = new Order("ORD-" + (orderRepository.findAll().size() + 1),
                 customer, restaurant, items, address);
+        if (pricingService != null) {
+            pricingService.applyPricing(order, pricingType);
+        }
         orderRepository.save(order);
         return order;
     }
@@ -102,7 +127,16 @@ public class OrderService {
      */
     public Order updateStatus(String orderId, OrderStatus newStatus) {
         Order order = getOrder(orderId);
-        order.setStatus(newStatus);
+        if (newStatus == OrderStatus.OUT_FOR_DELIVERY && order.getDriver() == null) {
+            throw new InvalidOrderStateException("Assign a driver before sending the order out");
+        }
+        order.changeStatus(newStatus);
+        if (newStatus == OrderStatus.DELIVERED && driverRepository != null) {
+            // driver is free again
+            order.getDriver().setStatus(DriverStatus.AVAILABLE);
+            order.getDriver().setLocation(order.getDeliveryAddress().getLocation());
+            driverRepository.save(order.getDriver());
+        }
         orderRepository.save(order);
         if (notificationService != null) {
             String msg;
