@@ -1,0 +1,20 @@
+@startuml
+!pragma layout smetana
+title Order Lifecycle - State Diagram (US4.1)
+
+[*] --> Pending : placeOrder()
+Pending --> Confirmed : manager confirms
+Confirmed --> Preparing : kitchen starts
+Preparing --> Ready : food ready
+Ready --> OutForDelivery : driver picks up\n[driver assigned]
+OutForDelivery --> Delivered : driver delivers\n/ driver becomes Available
+Pending --> Cancelled : cancel()
+Confirmed --> Cancelled : cancel()\n/ assigned driver freed
+Delivered --> [*]
+Cancelled --> [*]
+
+state OutForDelivery : "Out for Delivery"
+note right of Delivered : final - cannot be modified
+note right of Cancelled : final - cannot be modified
+note left of Preparing : from here on the order\ncan no longer be cancelled
+@enduml
