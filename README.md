@@ -17,7 +17,7 @@ presentation -> service -> domain, repository (in-memory)
 
 ## Progress
 - [x] Sprint 1 - Authentication & Restaurant/Menu catalog
-- [ ] Sprint 2 - Order operations
+- [x] Sprint 2 - Order operations
 - [ ] Sprint 3 - Driver assignment & notifications
 - [ ] Sprint 4 - Status lifecycle, pricing, payment
 - [ ] Sprint 5 - Order types & driver types
