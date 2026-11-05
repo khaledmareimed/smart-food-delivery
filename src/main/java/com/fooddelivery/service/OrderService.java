@@ -15,8 +15,10 @@ import com.fooddelivery.exception.ResourceNotFoundException;
 import com.fooddelivery.repository.DriverRepository;
 import com.fooddelivery.repository.OrderRepository;
 import com.fooddelivery.repository.RestaurantRepository;
+import com.fooddelivery.util.TimeProvider;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +32,7 @@ public class OrderService {
     private NotificationService notificationService;
     private DriverRepository driverRepository;
     private PricingService pricingService;
+    private TimeProvider timeProvider;
 
     /**
      * @param restaurantRepository used to look up the restaurant and its menu
@@ -53,6 +56,14 @@ public class OrderService {
         this(restaurantRepository, orderRepository, notificationService);
         this.driverRepository = driverRepository;
         this.pricingService = pricingService;
+    }
+
+    public OrderService(RestaurantRepository restaurantRepository, OrderRepository orderRepository,
+                        NotificationService notificationService, DriverRepository driverRepository,
+                        PricingService pricingService, TimeProvider timeProvider) {
+        this(restaurantRepository, orderRepository, notificationService, driverRepository,
+                pricingService);
+        this.timeProvider = timeProvider;
     }
 
     /**
@@ -81,6 +92,31 @@ public class OrderService {
      */
     public Order placeOrder(User customer, String restaurantId,
                             List<OrderLineRequest> lines, DeliveryAddress address, String pricingType) {
+        return placeOrder(customer, restaurantId, lines, address, pricingType, "STANDARD", null);
+    }
+
+    /**
+     * Places an order of a given type (US5.1, US5.2).
+     * EXPRESS adds 10 to the delivery fee, SCHEDULED needs a delivery time in the future,
+     * STANDARD follows the normal rules.
+     */
+    public Order placeOrder(User customer, String restaurantId, List<OrderLineRequest> lines,
+                            DeliveryAddress address, String pricingType, String orderType,
+                            LocalDateTime scheduledTime) {
+        if (orderType == null) {
+            orderType = "STANDARD";
+        }
+        if (orderType.equals("SCHEDULED")) {
+            if (scheduledTime == null) {
+                throw new InvalidOrderException("Scheduled orders need a delivery time");
+            }
+            LocalDateTime now = timeProvider != null ? timeProvider.now() : LocalDateTime.now();
+            if (!scheduledTime.isAfter(now)) {
+                throw new InvalidOrderException("Scheduled delivery time must be in the future");
+            }
+        } else if (!orderType.equals("STANDARD") && !orderType.equals("EXPRESS")) {
+            throw new InvalidOrderException("Unknown order type: " + orderType);
+        }
         if (customer == null) {
             throw new InvalidOrderException("A customer is required");
         }
@@ -98,6 +134,14 @@ public class OrderService {
                 customer, restaurant, items, address);
         if (pricingService != null) {
             pricingService.applyPricing(order, pricingType);
+        }
+        order.setOrderType(orderType);
+        if (orderType.equals("EXPRESS")) {
+            order.setDeliveryFee(order.getDeliveryFee().add(new BigDecimal("10.00")));
+            order.setTotal(order.getItemsTotal().add(order.getDeliveryFee())
+                    .subtract(order.getDiscount()));
+        } else if (orderType.equals("SCHEDULED")) {
+            order.setScheduledTime(scheduledTime);
         }
         orderRepository.save(order);
         return order;
@@ -177,6 +221,38 @@ public class OrderService {
      */
     public List<Order> getOrdersFor(User customer) {
         return orderRepository.findByCustomerId(customer.getId());
+    }
+
+    /**
+     * Small text report for the manager: orders per status and money collected.
+     */
+    public String getSummary() {
+        List<Order> all = orderRepository.findAll();
+        int pending = 0;
+        int active = 0;
+        int delivered = 0;
+        int cancelled = 0;
+        BigDecimal revenue = BigDecimal.ZERO;
+        BigDecimal unpaid = BigDecimal.ZERO;
+        for (Order o : all) {
+            if (o.getStatus() == OrderStatus.PENDING) {
+                pending++;
+            } else if (o.getStatus() == OrderStatus.DELIVERED) {
+                delivered++;
+            } else if (o.getStatus() == OrderStatus.CANCELLED) {
+                cancelled++;
+            } else {
+                active++;
+            }
+            if (o.getPaymentStatus().equals("PAID")) {
+                revenue = revenue.add(o.getTotal());
+            } else if (o.getStatus() != OrderStatus.CANCELLED) {
+                unpaid = unpaid.add(o.getTotal());
+            }
+        }
+        return "Orders: " + all.size() + " | Pending: " + pending + " | In progress: " + active
+                + " | Delivered: " + delivered + " | Cancelled: " + cancelled
+                + " | Collected: " + revenue + " | Not paid yet: " + unpaid;
     }
 
     private List<OrderItem> buildItems(Restaurant restaurant, List<OrderLineRequest> lines) {
