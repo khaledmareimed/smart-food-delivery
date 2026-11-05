@@ -61,6 +61,10 @@ public class DriverService {
         if (driver.getStatus() != DriverStatus.AVAILABLE) {
             throw new NoDriverAvailableException("Driver " + driver.getName() + " is busy");
         }
+        if (!driver.canDeliver(order)) {
+            throw new NoDriverAvailableException(driver.getType() + " driver " + driver.getName()
+                    + " cannot deliver this order (distance or size)");
+        }
         driver.setStatus(DriverStatus.BUSY);
         order.setDriver(driver);
         driverRepository.save(driver);
@@ -87,7 +91,7 @@ public class DriverService {
         if (mode.equals("NEAREST")) {
             double bestDistance = Double.MAX_VALUE;
             for (Driver d : driverRepository.findAll()) {
-                if (d.getStatus() == DriverStatus.AVAILABLE) {
+                if (d.getStatus() == DriverStatus.AVAILABLE && d.canDeliver(order)) {
                     double dist = d.getLocation().distanceTo(order.getRestaurant().getLocation());
                     if (dist < bestDistance) {
                         bestDistance = dist;
@@ -98,7 +102,7 @@ public class DriverService {
         } else if (mode.equals("FASTEST")) {
             double bestTime = Double.MAX_VALUE;
             for (Driver d : driverRepository.findAll()) {
-                if (d.getStatus() == DriverStatus.AVAILABLE) {
+                if (d.getStatus() == DriverStatus.AVAILABLE && d.canDeliver(order)) {
                     double dist = d.getLocation().distanceTo(order.getRestaurant().getLocation())
                             + order.getRestaurant().getLocation()
                             .distanceTo(order.getDeliveryAddress().getLocation());
@@ -113,7 +117,7 @@ public class DriverService {
             throw new IllegalArgumentException("Unknown selection mode: " + mode);
         }
         if (best == null) {
-            throw new NoDriverAvailableException("No driver is available right now");
+            throw new NoDriverAvailableException("No eligible driver is available right now");
         }
         best.setStatus(DriverStatus.BUSY);
         order.setDriver(best);

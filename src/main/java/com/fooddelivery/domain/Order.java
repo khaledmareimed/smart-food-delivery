@@ -3,29 +3,53 @@ package com.fooddelivery.domain;
 import com.fooddelivery.exception.InvalidOrderStateException;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * A customer's food order. A new order always starts in
- * {@link OrderStatus#PENDING}.
+ * A customer's food order.
+ * <p>
+ * A new order always starts in {@link OrderStatus#PENDING} and moves through
+ * Pending, Confirmed, Preparing, Ready, Out for Delivery and Delivered. It also
+ * keeps the bill (delivery fee, discount, total), the payment state, the
+ * assigned driver and the order type.
+ *
+ * @author khaledmareimed
+ * @author zainsiksik
  */
 public class Order {
 
+    /** Unique order identifier, for example "ORD-3". */
     private final String id;
+    /** The customer who placed the order. */
     private final User customer;
+    /** The restaurant that prepares the order. */
     private final Restaurant restaurant;
+    /** The ordered lines (menu item and quantity). */
     private final List<OrderItem> items;
+    /** Where the order is delivered. */
     private final DeliveryAddress deliveryAddress;
+    /** Current lifecycle state; every order starts as Pending. */
     private OrderStatus status = OrderStatus.PENDING;
+    /** The assigned driver, {@code null} until a driver is assigned. */
     private Driver driver;
+    /** Pricing type used for the bill: NORMAL, PEAK, EXPRESS or PROMO. */
     private String pricingType = "NORMAL";
+    /** Delivery fee included in the bill. */
     private BigDecimal deliveryFee = BigDecimal.ZERO;
+    /** Discount taken off the bill. */
     private BigDecimal discount = BigDecimal.ZERO;
+    /** Final bill; {@code null} means it is calculated from the other amounts. */
     private BigDecimal total;
+    /** Payment state: "UNPAID" or "PAID". */
     private String paymentStatus = "UNPAID";
+    /** Order type: STANDARD, EXPRESS or SCHEDULED. */
+    private String orderType = "STANDARD";
+    /** Requested delivery time for scheduled orders, otherwise {@code null}. */
+    private LocalDateTime scheduledTime;
 
     /**
      * Creates a pending order.
@@ -163,6 +187,35 @@ public class Order {
         status = newStatus;
     }
 
+    /** @return how many items (sum of quantities) are in the order */
+    public int getItemCount() {
+        int count = 0;
+        for (OrderItem item : items) {
+            count += item.getQuantity();
+        }
+        return count;
+    }
+
+    /** @return STANDARD, EXPRESS or SCHEDULED */
+    public String getOrderType() {
+        return orderType;
+    }
+
+    /** @param orderType STANDARD, EXPRESS or SCHEDULED */
+    public void setOrderType(String orderType) {
+        this.orderType = orderType;
+    }
+
+    /** @return when a scheduled order should be delivered, or {@code null} */
+    public LocalDateTime getScheduledTime() {
+        return scheduledTime;
+    }
+
+    /** @param scheduledTime when a scheduled order should be delivered */
+    public void setScheduledTime(LocalDateTime scheduledTime) {
+        this.scheduledTime = scheduledTime;
+    }
+
     /** @return the pricing type used for the bill */
     public String getPricingType() {
         return pricingType;
@@ -232,6 +285,12 @@ public class Order {
         status = OrderStatus.CANCELLED;
     }
 
+    /**
+     * Two orders are equal when they have the same id.
+     *
+     * @param o the other object
+     * @return {@code true} if {@code o} is an order with the same id
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -243,6 +302,7 @@ public class Order {
         return id.equals(((Order) o).id);
     }
 
+    /** @return a hash code based on the id */
     @Override
     public int hashCode() {
         return Objects.hash(id);

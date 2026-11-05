@@ -23,7 +23,7 @@ class SqliteDriverRepositoryTest {
         Database db = Database.inMemory();
         SqliteDriverRepository repo = new SqliteDriverRepository(db);
         DataSeeder.seedDrivers(repo);
-        assertEquals(3, repo.findAll().size());
+        assertEquals(4, repo.findAll().size());
 
         Driver d = repo.findById("d1").get();
         assertEquals("Omar", d.getName());
@@ -67,6 +67,43 @@ class SqliteDriverRepositoryTest {
         service.send("u2", "other");
         assertEquals(java.util.Arrays.asList("hello", "second"), service.getNotifications("u1"));
         assertTrue(service.getNotifications("nobody").isEmpty());
+        db.close();
+    }
+
+    @Test
+    void driverTypesAreRestored() {
+        Database db = Database.inMemory();
+        SqliteDriverRepository repo = new SqliteDriverRepository(db);
+        DataSeeder.seedDrivers(repo);
+        repo.save(new Driver("d9", "Plain", new Location(0, 0), 10));
+        assertEquals("BICYCLE", repo.findById("d1").get().getType());
+        assertEquals("MOTORCYCLE", repo.findById("d2").get().getType());
+        assertEquals("CAR", repo.findById("d3").get().getType());
+        Driver ev = repo.findById("d4").get();
+        assertEquals("ELECTRIC", ev.getType());
+        assertEquals(12, ((com.fooddelivery.domain.ElectricDriver) ev).getBatteryRangeKm());
+        assertEquals("STANDARD", repo.findById("d9").get().getType());
+        db.close();
+    }
+
+    @Test
+    void orderTypeAndScheduleAreStored() {
+        Database db = Database.inMemory();
+        SqliteUserRepository users = new SqliteUserRepository(db);
+        SqliteRestaurantRepository restaurants = new SqliteRestaurantRepository(db);
+        SqliteOrderRepository orders = new SqliteOrderRepository(db);
+        DataSeeder.seed(users, restaurants);
+        Restaurant r1 = restaurants.findById("r1").get();
+        Order order = new Order("ORD-1", users.findByUsername("alice").get(), r1,
+                Collections.singletonList(new OrderItem(r1.getMenu().get(0), 2)),
+                new DeliveryAddress("Main", new Location(1, 1)));
+        java.time.LocalDateTime when = java.time.LocalDateTime.of(2026, 11, 10, 19, 30);
+        order.setOrderType("SCHEDULED");
+        order.setScheduledTime(when);
+        orders.save(order);
+        Order loaded = orders.findById("ORD-1").get();
+        assertEquals("SCHEDULED", loaded.getOrderType());
+        assertEquals(when, loaded.getScheduledTime());
         db.close();
     }
 }

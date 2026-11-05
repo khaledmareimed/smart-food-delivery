@@ -58,6 +58,28 @@ public class Driver {
         this.status = status;
     }
 
+    /** @return the vehicle type shown in the GUI and stored in the database */
+    public String getType() {
+        return "STANDARD";
+    }
+
+    /** @return how far this driver can go in one trip, 0 = no limit */
+    public double getMaxDistanceKm() {
+        return 0;
+    }
+
+    /**
+     * Checks the vehicle rules for this order. A plain driver can deliver anything.
+     */
+    public boolean canDeliver(Order order) {
+        return true;
+    }
+
+    /** Distance from the restaurant to the customer. */
+    protected double deliveryDistance(Order order) {
+        return order.getRestaurant().getLocation().distanceTo(order.getDeliveryAddress().getLocation());
+    }
+
     public boolean isAvailable() {
         return status == DriverStatus.AVAILABLE;
     }
