@@ -53,12 +53,16 @@ class OrderNotificationTest {
 
     @Test
     void outForDeliveryNotification() {
+        order.setStatus(OrderStatus.READY);
+        order.setDriver(new com.fooddelivery.domain.Driver("d1", "Omar", new Location(0, 0), 20));
         service.updateStatus("ORD-1", OrderStatus.OUT_FOR_DELIVERY);
         verify(notifications).send(eq("u1"), contains("out for delivery"));
     }
 
     @Test
     void deliveredNotification() {
+        order.setStatus(OrderStatus.OUT_FOR_DELIVERY);
+        order.setDriver(new com.fooddelivery.domain.Driver("d1", "Omar", new Location(0, 0), 20));
         service.updateStatus("ORD-1", OrderStatus.DELIVERED);
         verify(notifications).send(eq("u1"), contains("has been delivered"));
     }

@@ -62,9 +62,12 @@ public class CustomerPanel extends JPanel {
     private JTextField streetField = new JTextField("Main Street 5", 14);
     private JTextField xField = new JTextField("3", 4);
     private JTextField yField = new JTextField("4", 4);
+    private javax.swing.JComboBox<String> pricingBox = new javax.swing.JComboBox<>(
+            new String[] {"NORMAL", "EXPRESS", "PROMO"});
 
     private DefaultTableModel ordersModel = new DefaultTableModel(
-            new Object[] {"Order", "Restaurant", "Status", "Driver", "Items total"}, 0) {
+            new Object[] {"Order", "Restaurant", "Status", "Driver", "Items", "Fee", "Discount",
+                "Total", "Payment"}, 0) {
         private static final long serialVersionUID = 1L;
 
         @Override
@@ -163,6 +166,8 @@ public class CustomerPanel extends JPanel {
         checkout.add(xField);
         checkout.add(new JLabel("Y:"));
         checkout.add(yField);
+        checkout.add(new JLabel("Pricing:"));
+        checkout.add(pricingBox);
         JButton place = new JButton("Place order");
         place.addActionListener(e -> placeOrder());
         checkout.add(place);
@@ -268,9 +273,16 @@ public class CustomerPanel extends JPanel {
     void placeOrder() {
         try {
             Order order = frame.orderService.placeOrder(user, cartRestaurantId, cartLines(),
-                    readAddress());
+                    readAddress(), (String) pricingBox.getSelectedItem());
             JOptionPane.showMessageDialog(this, "Order " + order.getId() + " placed. Status: "
-                    + order.getStatus() + "\nItems total: " + order.getItemsTotal());
+                    + order.getStatus()
+                    + "\n\nItems total:   " + order.getItemsTotal()
+                    + "\nDelivery fee:  " + order.getDeliveryFee()
+                    + "\nDiscount:      -" + order.getDiscount()
+                    + "\nPricing:       " + order.getPricingType()
+                    + "\n-----------------------"
+                    + "\nTOTAL:         " + order.getTotal()
+                    + "\n\nPay cash to the driver on delivery.");
             clearCart();
             refreshOrders();
         } catch (NumberFormatException ex) {
@@ -302,7 +314,8 @@ public class CustomerPanel extends JPanel {
         ordersModel.setRowCount(0);
         for (Order o : frame.orderService.getOrdersFor(user)) {
             ordersModel.addRow(new Object[] {o.getId(), o.getRestaurant().getName(), o.getStatus(),
-                    o.getDriver() == null ? "-" : o.getDriver().getName(), o.getItemsTotal()});
+                    o.getDriver() == null ? "-" : o.getDriver().getName(), o.getItemsTotal(),
+                    o.getDeliveryFee(), o.getDiscount(), o.getTotal(), o.getPaymentStatus()});
         }
     }
 
