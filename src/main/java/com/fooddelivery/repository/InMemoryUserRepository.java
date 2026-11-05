@@ -22,4 +22,14 @@ public class InMemoryUserRepository implements UserRepository {
     public Optional<User> findByUsername(String username) {
         return Optional.ofNullable(users.get(username));
     }
+
+    @Override
+    public Optional<User> findById(String id) {
+        for (User u : users.values()) {
+            if (u.getId().equals(id)) {
+                return Optional.of(u);
+            }
+        }
+        return Optional.empty();
+    }
 }
