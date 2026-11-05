@@ -1,0 +1,41 @@
+@startuml
+!pragma layout smetana
+title Layered Architecture - Package Diagram
+
+package "Presentation Layer (Swing)" as P {
+  [MainFrame]
+  [LoginPanel]
+  [CustomerPanel]
+  [ManagerPanel]
+  [DriverPanel]
+}
+package "Application / Service Layer" as S {
+  [AuthService]
+  [RestaurantService]
+  [OrderService]
+  [DriverService]
+  [PricingService]
+  [PaymentService]
+  [NotificationService]
+}
+package "Domain Layer" as D {
+  [Order / OrderItem / OrderStatus]
+  [Restaurant / MenuItem]
+  [Driver + 4 vehicle types]
+  [User / Role]
+  [Payment]
+}
+package "Persistence Layer" as R {
+  [Repository interfaces]
+  [Sqlite*Repository]
+  [Database]
+}
+database "SQLite\nfood_delivery.db" as DB
+
+P --> S : calls
+S --> D : uses
+S --> R : uses interfaces
+R --> D : maps rows to objects
+[Sqlite*Repository] --> [Database]
+[Database] --> DB : JDBC
+@enduml

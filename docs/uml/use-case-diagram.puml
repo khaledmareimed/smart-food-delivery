@@ -1,0 +1,62 @@
+@startuml
+!pragma layout smetana
+title Smart Food Delivery - Use Case Diagram
+skinparam packageStyle rectangle
+
+actor Customer
+actor Manager
+actor Driver
+actor "Notification\nService" as NS <<system>>
+
+rectangle "Smart Food Delivery System" {
+  usecase "Log in (US1.1)" as UC_LOGIN
+  usecase "View open restaurants (US1.2)" as UC_REST
+  usecase "View menu (US1.3)" as UC_MENU
+  usecase "Place order (US2.1)" as UC_PLACE
+  usecase "Validate order (US2.2)" as UC_VALID
+  usecase "Check delivery policies (US2.3)" as UC_POLICY
+  usecase "Cancel order (US2.4)" as UC_CANCEL
+  usecase "Choose pricing (US4.3)" as UC_PRICING
+  usecase "Choose order type (US5.1/5.2)" as UC_TYPE
+  usecase "Track order / read notifications" as UC_TRACK
+  usecase "Update order status (US4.1)" as UC_STATUS
+  usecase "Assign driver (US3.1)" as UC_ASSIGN
+  usecase "Smart driver selection (US3.2)" as UC_SMART
+  usecase "Check vehicle rules (US5.4)" as UC_VEHICLE
+  usecase "Process cash payment (US4.4)" as UC_PAY
+  usecase "Manage restaurants and menu" as UC_MANAGE
+  usecase "Go online / offline" as UC_ONLINE
+  usecase "Pick up / deliver order" as UC_DELIVER
+  usecase "Send notification (US3.3/3.4)" as UC_NOTIFY
+  usecase "Calculate delivery fee (US4.2)" as UC_FEE
+}
+
+Customer --> UC_LOGIN
+Customer --> UC_REST
+Customer --> UC_MENU
+Customer --> UC_PLACE
+Customer --> UC_CANCEL
+Customer --> UC_TRACK
+Manager --> UC_LOGIN
+Manager --> UC_STATUS
+Manager --> UC_ASSIGN
+Manager --> UC_PAY
+Manager --> UC_MANAGE
+Manager --> UC_CANCEL
+Driver --> UC_LOGIN
+Driver --> UC_ONLINE
+Driver --> UC_DELIVER
+Driver --> UC_PAY
+
+UC_PLACE ..> UC_VALID : <<include>>
+UC_PLACE ..> UC_POLICY : <<include>>
+UC_PLACE ..> UC_FEE : <<include>>
+UC_PRICING ..> UC_PLACE : <<extend>>
+UC_TYPE ..> UC_PLACE : <<extend>>
+UC_SMART ..> UC_ASSIGN : <<extend>>
+UC_ASSIGN ..> UC_VEHICLE : <<include>>
+UC_ASSIGN ..> UC_NOTIFY : <<include>>
+UC_STATUS ..> UC_NOTIFY : <<include>>
+UC_DELIVER ..> UC_STATUS : <<include>>
+UC_NOTIFY --> NS
+@enduml

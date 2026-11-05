@@ -7,5 +7,7 @@ public enum Role {
     /** A customer who browses restaurants and places orders. */
     CUSTOMER,
     /** A restaurant manager. */
-    MANAGER
+    MANAGER,
+    /** A delivery driver; the user id is the same as the driver id. */
+    DRIVER
 }

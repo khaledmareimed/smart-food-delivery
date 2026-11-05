@@ -55,6 +55,12 @@ class SqliteDriverRepositoryTest {
         order.setDriver(drivers.findById("d2").get());
         orders.save(order);
         assertEquals("Sara", orders.findById("ORD-1").get().getDriver().getName());
+        assertEquals(1, orders.findByDriverId("d2").size());
+        assertTrue(orders.findByDriverId("d1").isEmpty());
+
+        DataSeeder.seedDriverUsers(users);
+        assertEquals(com.fooddelivery.domain.Role.DRIVER, users.findByUsername("omar").get().getRole());
+        assertEquals("d1", users.findByUsername("omar").get().getId());
         db.close();
     }
 

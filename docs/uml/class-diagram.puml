@@ -1,5 +1,6 @@
 @startuml
-title Smart Food Delivery - Class Diagram (Phase 1, Sprints 1-5)
+!pragma layout smetana
+title Smart Food Delivery - Class Diagram (Phase 1)
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
 left to right direction
@@ -17,6 +18,12 @@ package presentation {
   class ManagerPanel {
     ~refresh()
   }
+  class DriverPanel {
+    ~refresh()
+    ~stopTimer()
+  }
+  class StatusStepper
+  class Theme
 }
 
 package service {
@@ -36,6 +43,9 @@ package service {
     +placeOrder(..., pricingType, orderType, scheduledTime): Order
     +cancelOrder(orderId): Order
     +updateStatus(orderId, status): Order
+    +updateStatusByDriver(driverId, orderId, status): Order
+    +nextStatus(OrderStatus): OrderStatus
+    +advanceStatus(orderId): Order
     +getOrder(orderId): Order
     +getOrdersFor(User): List<Order>
     +getAllOrders(): List<Order>
@@ -46,6 +56,10 @@ package service {
     -quantity: int
   }
   class DriverService {
+    +getDriver(driverId): Driver
+    +getOrdersForDriver(driverId): List<Order>
+    +getCurrentOrder(driverId): Order
+    +setAvailable(driverId, available): Driver
     +getAllDrivers(): List<Driver>
     +getAvailableDrivers(): List<Driver>
     +assignDriver(orderId, driverId): Order
@@ -72,12 +86,25 @@ package service {
 }
 
 package domain {
-  enum Role { CUSTOMER\nMANAGER }
+  enum Role {
+    CUSTOMER
+    MANAGER
+    DRIVER
+  }
   enum OrderStatus {
-    PENDING\nCONFIRMED\nPREPARING\nREADY\nOUT_FOR_DELIVERY\nDELIVERED\nCANCELLED
+    PENDING
+    CONFIRMED
+    PREPARING
+    READY
+    OUT_FOR_DELIVERY
+    DELIVERED
+    CANCELLED
     +isCancellable(): boolean
   }
-  enum DriverStatus { AVAILABLE\nBUSY }
+  enum DriverStatus {
+    AVAILABLE
+    BUSY
+  }
   class User {
     -id: String
     -username: String
@@ -193,6 +220,13 @@ package util {
 MainFrame *-- LoginPanel
 MainFrame *-- CustomerPanel
 MainFrame *-- ManagerPanel
+MainFrame *-- DriverPanel
+CustomerPanel *-- StatusStepper
+DriverPanel *-- StatusStepper
+LoginPanel ..> Theme
+CustomerPanel ..> Theme
+ManagerPanel ..> Theme
+DriverPanel ..> Theme
 MainFrame --> AuthService
 MainFrame --> RestaurantService
 MainFrame --> OrderService
