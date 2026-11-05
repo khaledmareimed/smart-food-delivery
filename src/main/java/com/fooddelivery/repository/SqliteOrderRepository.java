@@ -99,6 +99,11 @@ public class SqliteOrderRepository implements OrderRepository {
     }
 
     @Override
+    public List<Order> findByDriverId(String driverId) {
+        return query("SELECT * FROM orders WHERE driver_id = ? ORDER BY rowid", driverId);
+    }
+
+    @Override
     public List<Order> findAll() {
         return query("SELECT * FROM orders ORDER BY rowid", null);
     }

@@ -34,4 +34,6 @@ public interface OrderRepository {
     List<Order> findByCustomerId(String customerId);
 
     List<Order> findAll();
+
+    List<Order> findByDriverId(String driverId);
 }

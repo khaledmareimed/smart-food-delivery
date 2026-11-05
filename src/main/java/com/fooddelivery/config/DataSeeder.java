@@ -17,7 +17,7 @@ import com.fooddelivery.util.PasswordHasher;
 import java.math.BigDecimal;
 
 /**
- * Fills the in-memory repositories with demo data for the console application.
+ * Fills the database with demo data the first time the application runs.
  */
 public final class DataSeeder {
 
@@ -59,5 +59,14 @@ public final class DataSeeder {
         drivers.save(new MotorcycleDriver("d2", "Sara", new Location(6, 6), 40));
         drivers.save(new CarDriver("d3", "Ali", new Location(3, 0), 30));
         drivers.save(new ElectricDriver("d4", "Lina", new Location(2, 2), 35, 12));
+    }
+
+    /** Login accounts for the demo drivers. The user id is the driver id. */
+    public static void seedDriverUsers(UserRepository users) {
+        String hash = PasswordHasher.hash("driver123");
+        users.save(new User("d1", "omar", hash, Role.DRIVER));
+        users.save(new User("d2", "sara", hash, Role.DRIVER));
+        users.save(new User("d3", "ali", hash, Role.DRIVER));
+        users.save(new User("d4", "lina", hash, Role.DRIVER));
     }
 }
