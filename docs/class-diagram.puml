@@ -1,0 +1,61 @@
+@startuml
+title Smart Food Delivery - Class Diagram (Sprint 1)
+skinparam classAttributeIconSize 0
+
+package presentation {
+  class ConsoleUI {
+    +run()
+  }
+}
+package service {
+  class AuthService {
+    +login(username, password): User
+  }
+  class RestaurantService {
+    +getOpenRestaurants(): List<Restaurant>
+    +getAvailableMenu(restaurantId): List<MenuItem>
+  }
+}
+package repository {
+  interface UserRepository {
+    +save(User)
+    +findByUsername(String): Optional<User>
+  }
+  interface RestaurantRepository {
+    +save(Restaurant)
+    +findById(String): Optional<Restaurant>
+    +findAll(): List<Restaurant>
+  }
+  class InMemoryUserRepository
+  class InMemoryRestaurantRepository
+}
+package domain {
+  enum Role { CUSTOMER\nMANAGER }
+  class User {
+    -id: String
+    -username: String
+    -passwordHash: String
+  }
+  class Restaurant {
+    -id: String
+    -name: String
+    -open: boolean
+    +getAvailableMenuItems(): List<MenuItem>
+  }
+  class MenuItem {
+    -id: String
+    -name: String
+    -price: BigDecimal
+    -available: boolean
+  }
+}
+
+ConsoleUI --> AuthService
+ConsoleUI --> RestaurantService
+AuthService --> UserRepository
+RestaurantService --> RestaurantRepository
+InMemoryUserRepository ..|> UserRepository
+InMemoryRestaurantRepository ..|> RestaurantRepository
+User --> Role
+Restaurant "1" *-- "*" MenuItem : menu
+@enduml
