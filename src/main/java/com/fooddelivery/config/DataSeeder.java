@@ -1,8 +1,11 @@
 package com.fooddelivery.config;
 
-import com.fooddelivery.domain.Driver;
+import com.fooddelivery.domain.BicycleDriver;
+import com.fooddelivery.domain.CarDriver;
+import com.fooddelivery.domain.ElectricDriver;
 import com.fooddelivery.domain.Location;
 import com.fooddelivery.domain.MenuItem;
+import com.fooddelivery.domain.MotorcycleDriver;
 import com.fooddelivery.domain.Restaurant;
 import com.fooddelivery.domain.Role;
 import com.fooddelivery.domain.User;
@@ -52,8 +55,9 @@ public final class DataSeeder {
     }
 
     public static void seedDrivers(DriverRepository drivers) {
-        drivers.save(new Driver("d1", "Omar", new Location(1, 1), 20));
-        drivers.save(new Driver("d2", "Sara", new Location(6, 6), 40));
-        drivers.save(new Driver("d3", "Ali", new Location(3, 0), 30));
+        drivers.save(new BicycleDriver("d1", "Omar", new Location(1, 1), 15));
+        drivers.save(new MotorcycleDriver("d2", "Sara", new Location(6, 6), 40));
+        drivers.save(new CarDriver("d3", "Ali", new Location(3, 0), 30));
+        drivers.save(new ElectricDriver("d4", "Lina", new Location(2, 2), 35, 12));
     }
 }
