@@ -32,4 +32,6 @@ public interface OrderRepository {
      * @return that customer's orders in insertion order
      */
     List<Order> findByCustomerId(String customerId);
+
+    List<Order> findAll();
 }
