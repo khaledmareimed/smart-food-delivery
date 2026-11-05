@@ -61,4 +61,45 @@ class RestaurantTest {
         assertNotEquals(a, new Restaurant("r2", "A", true));
         assertNotEquals(a, "x");
     }
+
+    @Test
+    void deliveryZoneIsInclusiveOfTheRadius() {
+        Restaurant r = new Restaurant("r1", "Pizza", true,
+                new Location(0, 0), 5.0, new BigDecimal("20"));
+        assertTrue(r.isWithinDeliveryZone(new Location(3, 4)));
+        assertTrue(r.isWithinDeliveryZone(new Location(0, 0)));
+        assertFalse(r.isWithinDeliveryZone(new Location(3.1, 4)));
+        assertEquals(5.0, r.getDeliveryRadiusKm(), 0);
+        assertEquals(new Location(0, 0), r.getLocation());
+        assertEquals(0, new BigDecimal("20").compareTo(r.getMinimumOrderValue()));
+    }
+
+    @Test
+    void shortConstructorUsesDefaults() {
+        Restaurant r = new Restaurant("r1", "Pizza", true);
+        assertEquals(Restaurant.DEFAULT_DELIVERY_RADIUS_KM, r.getDeliveryRadiusKm(), 0);
+        assertEquals(0, BigDecimal.ZERO.compareTo(r.getMinimumOrderValue()));
+    }
+
+    @Test
+    void rejectsInvalidZoneSettings() {
+        assertThrows(IllegalArgumentException.class, () -> new Restaurant("r1", "P", true,
+                null, 5.0, BigDecimal.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> new Restaurant("r1", "P", true,
+                new Location(0, 0), -1, BigDecimal.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> new Restaurant("r1", "P", true,
+                new Location(0, 0), 5, new BigDecimal("-1")));
+        assertThrows(IllegalArgumentException.class, () -> new Restaurant("r1", "P", true,
+                new Location(0, 0), 5, null));
+    }
+
+    @Test
+    void findMenuItemFindsAvailableAndUnavailableItems() {
+        Restaurant r = new Restaurant("r1", "Pizza", true);
+        r.addMenuItem(item("a", true));
+        r.addMenuItem(item("b", false));
+        assertTrue(r.findMenuItem("a").isPresent());
+        assertTrue(r.findMenuItem("b").isPresent());
+        assertFalse(r.findMenuItem("zzz").isPresent());
+    }
 }
