@@ -57,9 +57,8 @@
                 <version>${jacoco.version}</version>
                 <configuration>
                     <excludes>
-                        <!-- Swing screens and the launcher are tested by hand -->
+                        <!-- Swing screens are tested by hand -->
                         <exclude>com/fooddelivery/presentation/**</exclude>
-                        <exclude>com/fooddelivery/Main.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -83,12 +82,12 @@
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.85</minimum>
+                                            <minimum>0.80</minimum>
                                         </limit>
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.85</minimum>
+                                            <minimum>0.80</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

@@ -7,3 +7,4 @@ out/
 .project
 .settings/
 *.db
+dependency-reduced-pom.xml
