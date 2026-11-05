@@ -31,8 +31,8 @@ public class ManagerPanel extends JPanel {
     private MainFrame frame;
 
     private DefaultTableModel ordersModel = new DefaultTableModel(
-            new Object[] {"Order", "Customer", "Restaurant", "Status", "Driver", "Pricing", "Total",
-                "Payment"}, 0) {
+            new Object[] {"Order", "Customer", "Restaurant", "Type", "Items", "Status", "Driver",
+                "Pricing", "Total", "Payment"}, 0) {
         private static final long serialVersionUID = 1L;
 
         @Override
@@ -42,7 +42,7 @@ public class ManagerPanel extends JPanel {
     };
     private JTable ordersTable = new JTable(ordersModel);
     private DefaultTableModel driversModel = new DefaultTableModel(
-            new Object[] {"Id", "Name", "Location", "Speed km/h", "Status"}, 0) {
+            new Object[] {"Id", "Name", "Vehicle", "Max km", "Location", "Speed km/h", "Status"}, 0) {
         private static final long serialVersionUID = 1L;
 
         @Override
@@ -53,6 +53,17 @@ public class ManagerPanel extends JPanel {
     private JComboBox<OrderStatus> statusBox = new JComboBox<>(OrderStatus.values());
     private JComboBox<String> modeBox = new JComboBox<>(new String[] {"NEAREST", "FASTEST"});
     private JComboBox<Driver> driverBox = new JComboBox<>();
+    private JLabel summaryLabel = new JLabel(" ");
+    private DefaultTableModel restaurantsModel = new DefaultTableModel(
+            new Object[] {"Restaurant id", "Restaurant", "Open", "Item id", "Item", "Price", "Available"}, 0) {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public boolean isCellEditable(int r, int c) {
+            return false;
+        }
+    };
+    private JTable restaurantsTable = new JTable(restaurantsModel);
 
     public ManagerPanel(MainFrame frame, User user) {
         this.frame = frame;
@@ -68,8 +79,10 @@ public class ManagerPanel extends JPanel {
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("Orders", buildOrdersTab());
         tabs.addTab("Drivers", new JScrollPane(new JTable(driversModel)));
+        tabs.addTab("Restaurants", buildRestaurantsTab());
         tabs.addChangeListener(e -> refresh());
         add(tabs, BorderLayout.CENTER);
+        add(summaryLabel, BorderLayout.SOUTH);
         refresh();
     }
 
@@ -107,6 +120,37 @@ public class ManagerPanel extends JPanel {
         refreshRow.add(refresh);
         actions.add(refreshRow);
         panel.add(actions, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel buildRestaurantsTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(new JScrollPane(restaurantsTable), BorderLayout.CENTER);
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton toggleOpen = new JButton("Open / close restaurant");
+        toggleOpen.addActionListener(e -> {
+            int row = restaurantsTable.getSelectedRow();
+            if (row < 0) {
+                return;
+            }
+            frame.restaurantService.setRestaurantOpen((String) restaurantsModel.getValueAt(row, 0),
+                    !"yes".equals(restaurantsModel.getValueAt(row, 2)));
+            refresh();
+        });
+        JButton toggleItem = new JButton("Available / sold out");
+        toggleItem.addActionListener(e -> {
+            int row = restaurantsTable.getSelectedRow();
+            if (row < 0 || restaurantsModel.getValueAt(row, 3) == null) {
+                return;
+            }
+            frame.restaurantService.setMenuItemAvailable((String) restaurantsModel.getValueAt(row, 0),
+                    (String) restaurantsModel.getValueAt(row, 3),
+                    !"yes".equals(restaurantsModel.getValueAt(row, 6)));
+            refresh();
+        });
+        buttons.add(toggleOpen);
+        buttons.add(toggleItem);
+        panel.add(buttons, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -201,17 +245,29 @@ public class ManagerPanel extends JPanel {
         ordersModel.setRowCount(0);
         for (Order o : frame.orderService.getAllOrders()) {
             ordersModel.addRow(new Object[] {o.getId(), o.getCustomer().getUsername(),
-                    o.getRestaurant().getName(), o.getStatus(),
+                    o.getRestaurant().getName(),
+                    o.getScheduledTime() == null ? o.getOrderType()
+                            : o.getOrderType() + " " + o.getScheduledTime(),
+                    o.getItemCount(), o.getStatus(),
                     o.getDriver() == null ? "-" : o.getDriver().getName(), o.getPricingType(),
                     o.getTotal(), o.getPaymentStatus()});
         }
         if (selected >= 0 && selected < ordersModel.getRowCount()) {
             ordersTable.setRowSelectionInterval(selected, selected);
         }
+        restaurantsModel.setRowCount(0);
+        for (com.fooddelivery.domain.Restaurant r : frame.restaurantService.getAllRestaurants()) {
+            for (com.fooddelivery.domain.MenuItem m : r.getMenu()) {
+                restaurantsModel.addRow(new Object[] {r.getId(), r.getName(), r.isOpen() ? "yes" : "no",
+                        m.getId(), m.getName(), m.getPrice(), m.isAvailable() ? "yes" : "no"});
+            }
+        }
+        summaryLabel.setText("  " + frame.orderService.getSummary());
         driversModel.setRowCount(0);
         driverBox.removeAllItems();
         for (Driver d : frame.driverService.getAllDrivers()) {
-            driversModel.addRow(new Object[] {d.getId(), d.getName(), d.getLocation(),
+            driversModel.addRow(new Object[] {d.getId(), d.getName(), d.getType(),
+                    d.getMaxDistanceKm() == 0 ? "no limit" : d.getMaxDistanceKm(), d.getLocation(),
                     d.getSpeedKmh(), d.getStatus()});
             if (d.isAvailable()) {
                 driverBox.addItem(d);
