@@ -64,9 +64,12 @@ public class CustomerPanel extends JPanel {
     private JTextField yField = new JTextField("4", 4);
     private javax.swing.JComboBox<String> pricingBox = new javax.swing.JComboBox<>(
             new String[] {"NORMAL", "EXPRESS", "PROMO"});
+    private javax.swing.JComboBox<String> typeBox = new javax.swing.JComboBox<>(
+            new String[] {"STANDARD", "EXPRESS", "SCHEDULED"});
+    private JTextField scheduleField = new JTextField(12);
 
     private DefaultTableModel ordersModel = new DefaultTableModel(
-            new Object[] {"Order", "Restaurant", "Status", "Driver", "Items", "Fee", "Discount",
+            new Object[] {"Order", "Restaurant", "Type", "Status", "Driver", "Items", "Fee", "Discount",
                 "Total", "Payment"}, 0) {
         private static final long serialVersionUID = 1L;
 
@@ -168,6 +171,12 @@ public class CustomerPanel extends JPanel {
         checkout.add(yField);
         checkout.add(new JLabel("Pricing:"));
         checkout.add(pricingBox);
+        checkout.add(new JLabel("Type:"));
+        checkout.add(typeBox);
+        checkout.add(new JLabel("Deliver at (yyyy-MM-dd HH:mm):"));
+        scheduleField.setEnabled(false);
+        typeBox.addActionListener(e -> scheduleField.setEnabled("SCHEDULED".equals(typeBox.getSelectedItem())));
+        checkout.add(scheduleField);
         JButton place = new JButton("Place order");
         place.addActionListener(e -> placeOrder());
         checkout.add(place);
@@ -270,21 +279,35 @@ public class CustomerPanel extends JPanel {
                 Double.parseDouble(yField.getText().trim())));
     }
 
+    java.time.LocalDateTime readScheduledTime() {
+        if (!"SCHEDULED".equals(typeBox.getSelectedItem()) || scheduleField.getText().trim().isEmpty()) {
+            return null;
+        }
+        return java.time.LocalDateTime.parse(scheduleField.getText().trim(),
+                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+    }
+
     void placeOrder() {
         try {
             Order order = frame.orderService.placeOrder(user, cartRestaurantId, cartLines(),
-                    readAddress(), (String) pricingBox.getSelectedItem());
+                    readAddress(), (String) pricingBox.getSelectedItem(),
+                    (String) typeBox.getSelectedItem(), readScheduledTime());
             JOptionPane.showMessageDialog(this, "Order " + order.getId() + " placed. Status: "
                     + order.getStatus()
                     + "\n\nItems total:   " + order.getItemsTotal()
                     + "\nDelivery fee:  " + order.getDeliveryFee()
                     + "\nDiscount:      -" + order.getDiscount()
                     + "\nPricing:       " + order.getPricingType()
+                    + "\nOrder type:    " + order.getOrderType()
+                    + (order.getScheduledTime() == null ? "" : " at " + order.getScheduledTime())
                     + "\n-----------------------"
                     + "\nTOTAL:         " + order.getTotal()
                     + "\n\nPay cash to the driver on delivery.");
             clearCart();
             refreshOrders();
+        } catch (java.time.format.DateTimeParseException ex) {
+            JOptionPane.showMessageDialog(this, "Delivery time must look like 2026-11-05 19:30",
+                    "Error", JOptionPane.ERROR_MESSAGE);
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "X and Y must be numbers", "Error",
                     JOptionPane.ERROR_MESSAGE);
@@ -313,7 +336,8 @@ public class CustomerPanel extends JPanel {
     void refreshOrders() {
         ordersModel.setRowCount(0);
         for (Order o : frame.orderService.getOrdersFor(user)) {
-            ordersModel.addRow(new Object[] {o.getId(), o.getRestaurant().getName(), o.getStatus(),
+            ordersModel.addRow(new Object[] {o.getId(), o.getRestaurant().getName(), o.getOrderType(),
+                    o.getStatus(),
                     o.getDriver() == null ? "-" : o.getDriver().getName(), o.getItemsTotal(),
                     o.getDeliveryFee(), o.getDiscount(), o.getTotal(), o.getPaymentStatus()});
         }

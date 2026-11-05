@@ -1,12 +1,24 @@
 @startuml
-title Smart Food Delivery - Class Diagram (Sprints 1-2)
+title Smart Food Delivery - Class Diagram (Phase 1, Sprints 1-5)
 skinparam classAttributeIconSize 0
+skinparam linetype ortho
+left to right direction
 
 package presentation {
-  class ConsoleUI {
-    +run()
+  class MainFrame {
+    ~loggedIn(User)
+    ~logout()
+  }
+  class LoginPanel
+  class CustomerPanel {
+    ~placeOrder()
+    ~refreshOrders()
+  }
+  class ManagerPanel {
+    ~refresh()
   }
 }
+
 package service {
   class AuthService {
     +login(username, password): User
@@ -14,62 +26,103 @@ package service {
   class RestaurantService {
     +getOpenRestaurants(): List<Restaurant>
     +getAvailableMenu(restaurantId): List<MenuItem>
+    +getAllRestaurants(): List<Restaurant>
+    +setRestaurantOpen(id, open)
+    +setMenuItemAvailable(restaurantId, itemId, available)
   }
   class OrderService {
     +placeOrder(customer, restaurantId, lines, address): Order
+    +placeOrder(..., pricingType): Order
+    +placeOrder(..., pricingType, orderType, scheduledTime): Order
     +cancelOrder(orderId): Order
+    +updateStatus(orderId, status): Order
     +getOrder(orderId): Order
-    +getOrdersFor(customer): List<Order>
+    +getOrdersFor(User): List<Order>
+    +getAllOrders(): List<Order>
+    +getSummary(): String
   }
   class OrderLineRequest {
     -menuItemId: String
     -quantity: int
   }
-}
-package repository {
-  interface UserRepository
-  interface RestaurantRepository
-  interface OrderRepository {
-    +save(Order)
-    +findById(String): Optional<Order>
-    +findByCustomerId(String): List<Order>
+  class DriverService {
+    +getAllDrivers(): List<Driver>
+    +getAvailableDrivers(): List<Driver>
+    +assignDriver(orderId, driverId): Order
+    +assignBestDriver(orderId, mode): Order
   }
-  class InMemoryUserRepository
-  class InMemoryRestaurantRepository
-  class InMemoryOrderRepository
+  class PricingService {
+    +calculateDeliveryFee(distanceKm): BigDecimal
+    +isPeakHour(): boolean
+    +applyPricing(Order, pricingType): BigDecimal
+  }
+  class PaymentService {
+    +payCash(orderId, amountGiven): Payment
+    +getPayments(orderId): List<Payment>
+  }
+  interface NotificationService {
+    +send(userId, message)
+    +getNotifications(userId): List<String>
+  }
+  class DatabaseNotificationService
+  interface PaymentGateway {
+    +process(orderId, amount): boolean
+  }
+  class CashRegister
 }
+
 package domain {
   enum Role { CUSTOMER\nMANAGER }
   enum OrderStatus {
-    PENDING
-    CONFIRMED
-    PREPARING
-    READY
-    OUT_FOR_DELIVERY
-    DELIVERED
-    CANCELLED
+    PENDING\nCONFIRMED\nPREPARING\nREADY\nOUT_FOR_DELIVERY\nDELIVERED\nCANCELLED
     +isCancellable(): boolean
   }
+  enum DriverStatus { AVAILABLE\nBUSY }
   class User {
     -id: String
     -username: String
     -passwordHash: String
+    -role: Role
   }
   class Restaurant {
     -id: String
     -name: String
     -open: boolean
+    -location: Location
     -deliveryRadiusKm: double
     -minimumOrderValue: BigDecimal
     +getAvailableMenuItems(): List<MenuItem>
-    +findMenuItem(id): Optional<MenuItem>
     +isWithinDeliveryZone(Location): boolean
+    +findMenuItem(id): Optional<MenuItem>
   }
   class MenuItem {
     -id: String
     -name: String
     -price: BigDecimal
     -available: boolean
+  }
+  class Order {
+    -id: String
+    -status: OrderStatus
+    -pricingType: String
+    -deliveryFee: BigDecimal
+    -discount: BigDecimal
+    -total: BigDecimal
+    -paymentStatus: String
+    -orderType: String
+    -scheduledTime: LocalDateTime
+    +changeStatus(OrderStatus)
+    +cancel()
+    +getItemsTotal(): BigDecimal
+    +getTotal(): BigDecimal
+    +getItemCount(): int
+  }
+  class OrderItem {
+    -menuItemId: String
+    -name: String
+    -unitPrice: BigDecimal
+    -quantity: int
+    +getSubtotal(): BigDecimal
   }
   class Location {
     -x: double
@@ -80,47 +133,120 @@ package domain {
     -street: String
     +isValid(): boolean
   }
-  class OrderItem {
-    -unitPrice: BigDecimal
-    -quantity: int
-    +getSubtotal(): BigDecimal
-  }
-  class Order {
+  class Driver {
     -id: String
-    -status: OrderStatus
-    +getItemsTotal(): BigDecimal
-    +cancel()
+    -name: String
+    -location: Location
+    -speedKmh: double
+    -status: DriverStatus
+    +getType(): String
+    +getMaxDistanceKm(): double
+    +canDeliver(Order): boolean
   }
-}
-package exception {
-  class InvalidOrderException
-  class DeliveryPolicyException
-  class InvalidOrderStateException
-  class ResourceNotFoundException
-  class AuthenticationException
+  class BicycleDriver
+  class MotorcycleDriver
+  class CarDriver
+  class ElectricDriver {
+    -batteryRangeKm: double
+  }
+  class Payment {
+    -id: String
+    -orderId: String
+    -method: String
+    -amount: BigDecimal
+    -change: BigDecimal
+    -status: String
+  }
 }
 
-ConsoleUI --> AuthService
-ConsoleUI --> RestaurantService
-ConsoleUI --> OrderService
+package repository {
+  interface UserRepository
+  interface RestaurantRepository
+  interface OrderRepository
+  interface DriverRepository
+  interface PaymentRepository
+  class SqliteUserRepository
+  class SqliteRestaurantRepository
+  class SqliteOrderRepository
+  class SqliteDriverRepository
+  class SqlitePaymentRepository
+}
+
+package persistence {
+  class Database {
+    +getConnection(): Connection
+    +inMemory(): Database
+    +close()
+  }
+}
+
+package util {
+  interface TimeProvider {
+    +now(): LocalDateTime
+  }
+  class SystemTimeProvider
+  class PasswordHasher {
+    +hash(password): String
+  }
+}
+
+MainFrame *-- LoginPanel
+MainFrame *-- CustomerPanel
+MainFrame *-- ManagerPanel
+MainFrame --> AuthService
+MainFrame --> RestaurantService
+MainFrame --> OrderService
+MainFrame --> DriverService
+MainFrame --> PaymentService
+MainFrame --> NotificationService
+
 AuthService --> UserRepository
 RestaurantService --> RestaurantRepository
 OrderService --> RestaurantRepository
 OrderService --> OrderRepository
+OrderService --> DriverRepository
+OrderService --> NotificationService
+OrderService --> PricingService
+OrderService --> TimeProvider
 OrderService ..> OrderLineRequest
-OrderService ..> InvalidOrderException
-OrderService ..> DeliveryPolicyException
-Order ..> InvalidOrderStateException
-InMemoryUserRepository ..|> UserRepository
-InMemoryRestaurantRepository ..|> RestaurantRepository
-InMemoryOrderRepository ..|> OrderRepository
+DriverService --> DriverRepository
+DriverService --> OrderRepository
+DriverService --> NotificationService
+PricingService --> TimeProvider
+PaymentService --> OrderRepository
+PaymentService --> PaymentRepository
+PaymentService --> PaymentGateway
+
+DatabaseNotificationService ..|> NotificationService
+CashRegister ..|> PaymentGateway
+SystemTimeProvider ..|> TimeProvider
+SqliteUserRepository ..|> UserRepository
+SqliteRestaurantRepository ..|> RestaurantRepository
+SqliteOrderRepository ..|> OrderRepository
+SqliteDriverRepository ..|> DriverRepository
+SqlitePaymentRepository ..|> PaymentRepository
+SqliteUserRepository --> Database
+SqliteRestaurantRepository --> Database
+SqliteOrderRepository --> Database
+SqliteDriverRepository --> Database
+SqlitePaymentRepository --> Database
+DatabaseNotificationService --> Database
+
 User --> Role
 Restaurant "1" *-- "*" MenuItem : menu
 Restaurant --> Location
-DeliveryAddress --> Location
 Order --> User : customer
 Order --> Restaurant
+Order "1" *-- "1..*" OrderItem
 Order --> DeliveryAddress
 Order --> OrderStatus
-Order "1" *-- "1..*" OrderItem
+Order --> "0..1" Driver
+DeliveryAddress --> Location
+Driver --> DriverStatus
+Driver --> Location
+BicycleDriver --|> Driver
+MotorcycleDriver --|> Driver
+CarDriver --|> Driver
+ElectricDriver --|> Driver
+Payment ..> Order : orderId
 @enduml

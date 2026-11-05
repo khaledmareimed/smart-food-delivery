@@ -44,8 +44,9 @@ public final class Main {
         DatabaseNotificationService notifications = new DatabaseNotificationService(db);
         final AuthService auth = new AuthService(users);
         final RestaurantService restaurantService = new RestaurantService(restaurants);
+        SystemTimeProvider clock = new SystemTimeProvider();
         final OrderService orderService = new OrderService(restaurants, orders, notifications,
-                drivers, new PricingService(new SystemTimeProvider()));
+                drivers, new PricingService(clock), clock);
         final PaymentService paymentService = new PaymentService(orders,
                 new SqlitePaymentRepository(db), new CashRegister());
         final DriverService driverService = new DriverService(drivers, orders, notifications);

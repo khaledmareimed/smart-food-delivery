@@ -54,12 +54,14 @@ public class Database {
         st.executeUpdate("CREATE TABLE IF NOT EXISTS orders ("
                 + "id TEXT PRIMARY KEY, customer_id TEXT NOT NULL, restaurant_id TEXT NOT NULL, "
                 + "street TEXT, x REAL, y REAL, status TEXT NOT NULL, driver_id TEXT, "
-                + "pricing_type TEXT, delivery_fee TEXT, discount TEXT, total TEXT, payment_status TEXT)");
+                + "pricing_type TEXT, delivery_fee TEXT, discount TEXT, total TEXT, payment_status TEXT, "
+                + "order_type TEXT, scheduled_time TEXT)");
         st.executeUpdate("CREATE TABLE IF NOT EXISTS order_items ("
                 + "order_id TEXT NOT NULL, menu_item_id TEXT NOT NULL, name TEXT, "
                 + "unit_price TEXT, quantity INTEGER)");
         st.executeUpdate("CREATE TABLE IF NOT EXISTS drivers ("
-                + "id TEXT PRIMARY KEY, name TEXT NOT NULL, x REAL, y REAL, speed REAL, status TEXT)");
+                + "id TEXT PRIMARY KEY, name TEXT NOT NULL, x REAL, y REAL, speed REAL, status TEXT, "
+                + "type TEXT, battery_range REAL)");
         st.executeUpdate("CREATE TABLE IF NOT EXISTS notifications ("
                 + "id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, message TEXT)");
         st.executeUpdate("CREATE TABLE IF NOT EXISTS payments ("
