@@ -33,6 +33,44 @@ public class DriverService {
         return driverRepository.findAll();
     }
 
+    public Driver getDriver(String driverId) {
+        return driverRepository.findById(driverId)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found: " + driverId));
+    }
+
+    /** @return every order that was given to this driver, oldest first */
+    public List<Order> getOrdersForDriver(String driverId) {
+        return orderRepository.findByDriverId(driverId);
+    }
+
+    /** @return the order the driver is delivering now, or null */
+    public Order getCurrentOrder(String driverId) {
+        for (Order o : orderRepository.findByDriverId(driverId)) {
+            if (o.getStatus() != OrderStatus.DELIVERED && o.getStatus() != OrderStatus.CANCELLED) {
+                return o;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Driver goes online (available) or offline (busy). A driver with an
+     * active delivery cannot go online.
+     */
+    public Driver setAvailable(String driverId, boolean available) {
+        Driver driver = getDriver(driverId);
+        if (available && getCurrentOrder(driverId) != null) {
+            throw new InvalidOrderStateException("Finish your current delivery first");
+        }
+        if (available) {
+            driver.setStatus(DriverStatus.AVAILABLE);
+        } else {
+            driver.setStatus(DriverStatus.BUSY);
+        }
+        driverRepository.save(driver);
+        return driver;
+    }
+
     public List<Driver> getAvailableDrivers() {
         List<Driver> result = new ArrayList<>();
         for (Driver d : driverRepository.findAll()) {
@@ -71,6 +109,8 @@ public class DriverService {
         orderRepository.save(order);
         notificationService.send(order.getCustomer().getId(), "Driver " + driver.getName()
                 + " has been assigned to your order " + order.getId());
+        notificationService.send(driver.getId(), "New delivery " + order.getId() + ": pick up at "
+                + order.getRestaurant().getName() + ", deliver to " + order.getDeliveryAddress().getStreet());
         return order;
     }
 
@@ -125,6 +165,8 @@ public class DriverService {
         orderRepository.save(order);
         notificationService.send(order.getCustomer().getId(), "Driver " + best.getName()
                 + " has been assigned to your order " + order.getId());
+        notificationService.send(best.getId(), "New delivery " + order.getId() + ": pick up at "
+                + order.getRestaurant().getName() + ", deliver to " + order.getDeliveryAddress().getStreet());
         return order;
     }
 }
