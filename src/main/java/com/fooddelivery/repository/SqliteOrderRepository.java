@@ -37,7 +37,8 @@ public class SqliteOrderRepository implements OrderRepository {
         try {
             PreparedStatement ps = db.getConnection().prepareStatement(
                     "INSERT OR REPLACE INTO orders(id, customer_id, restaurant_id, street, x, y, status, "
-                            + "driver_id) VALUES (?,?,?,?,?,?,?,?)");
+                            + "driver_id, pricing_type, delivery_fee, discount, total, payment_status) "
+                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
             ps.setString(1, o.getId());
             ps.setString(2, o.getCustomer().getId());
             ps.setString(3, o.getRestaurant().getId());
@@ -50,6 +51,11 @@ public class SqliteOrderRepository implements OrderRepository {
             } else {
                 ps.setString(8, null);
             }
+            ps.setString(9, o.getPricingType());
+            ps.setString(10, o.getDeliveryFee().toPlainString());
+            ps.setString(11, o.getDiscount().toPlainString());
+            ps.setString(12, o.getTotal().toPlainString());
+            ps.setString(13, o.getPaymentStatus());
             ps.executeUpdate();
             ps.close();
 
@@ -107,7 +113,9 @@ public class SqliteOrderRepository implements OrderRepository {
             while (rs.next()) {
                 rows.add(new String[] {rs.getString("id"), rs.getString("customer_id"),
                         rs.getString("restaurant_id"), rs.getString("street"), rs.getString("status"),
-                        rs.getString("driver_id")});
+                        rs.getString("driver_id"), rs.getString("pricing_type"),
+                        rs.getString("delivery_fee"), rs.getString("discount"), rs.getString("total"),
+                        rs.getString("payment_status")});
                 coords.add(new double[] {rs.getDouble("x"), rs.getDouble("y")});
             }
             rs.close();
@@ -123,6 +131,11 @@ public class SqliteOrderRepository implements OrderRepository {
                 if (row[5] != null) {
                     order.setDriver(drivers.findById(row[5]).orElse(null));
                 }
+                order.setPricingType(row[6]);
+                order.setDeliveryFee(new BigDecimal(row[7]));
+                order.setDiscount(new BigDecimal(row[8]));
+                order.setTotal(new BigDecimal(row[9]));
+                order.setPaymentStatus(row[10]);
                 result.add(order);
             }
         } catch (SQLException e) {
