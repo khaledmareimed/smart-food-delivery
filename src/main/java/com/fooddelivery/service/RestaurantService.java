@@ -50,4 +50,36 @@ public class RestaurantService {
                         "Restaurant not found: " + restaurantId));
         return restaurant.getAvailableMenuItems();
     }
+
+    /** @return all restaurants, open or closed (manager screen) */
+    public List<Restaurant> getAllRestaurants() {
+        return restaurantRepository.findAll();
+    }
+
+    /** Opens or closes a restaurant. */
+    public void setRestaurantOpen(String restaurantId, boolean open) {
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Restaurant not found: " + restaurantId));
+        restaurant.setOpen(open);
+        restaurantRepository.save(restaurant);
+    }
+
+    /** Marks a menu item as available or sold out. */
+    public void setMenuItemAvailable(String restaurantId, String menuItemId, boolean available) {
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Restaurant not found: " + restaurantId));
+        MenuItem item = null;
+        for (MenuItem m : restaurant.getMenu()) {
+            if (m.getId().equals(menuItemId)) {
+                item = m;
+            }
+        }
+        if (item == null) {
+            throw new ResourceNotFoundException("Menu item not found: " + menuItemId);
+        }
+        item.setAvailable(available);
+        restaurantRepository.save(restaurant);
+    }
 }
