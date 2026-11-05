@@ -4,6 +4,7 @@ import com.fooddelivery.domain.DeliveryAddress;
 import com.fooddelivery.domain.MenuItem;
 import com.fooddelivery.domain.Order;
 import com.fooddelivery.domain.OrderItem;
+import com.fooddelivery.domain.OrderStatus;
 import com.fooddelivery.domain.Restaurant;
 import com.fooddelivery.domain.User;
 import com.fooddelivery.exception.DeliveryPolicyException;
@@ -23,6 +24,7 @@ public class OrderService {
 
     private final RestaurantRepository restaurantRepository;
     private final OrderRepository orderRepository;
+    private NotificationService notificationService;
 
     /**
      * @param restaurantRepository used to look up the restaurant and its menu
@@ -32,6 +34,12 @@ public class OrderService {
                         OrderRepository orderRepository) {
         this.restaurantRepository = restaurantRepository;
         this.orderRepository = orderRepository;
+    }
+
+    public OrderService(RestaurantRepository restaurantRepository,
+                        OrderRepository orderRepository, NotificationService notificationService) {
+        this(restaurantRepository, orderRepository);
+        this.notificationService = notificationService;
     }
 
     /**
@@ -82,7 +90,37 @@ public class OrderService {
         Order order = getOrder(orderId);
         order.cancel();
         orderRepository.save(order);
+        if (notificationService != null) {
+            notificationService.send(order.getCustomer().getId(),
+                    "Your order " + order.getId() + " was cancelled");
+        }
         return order;
+    }
+
+    /**
+     * Changes the status of an order and notifies the customer (US3.3, US3.4).
+     */
+    public Order updateStatus(String orderId, OrderStatus newStatus) {
+        Order order = getOrder(orderId);
+        order.setStatus(newStatus);
+        orderRepository.save(order);
+        if (notificationService != null) {
+            String msg;
+            if (newStatus == OrderStatus.OUT_FOR_DELIVERY) {
+                msg = "Your order " + order.getId() + " is out for delivery";
+            } else if (newStatus == OrderStatus.DELIVERED) {
+                msg = "Your order " + order.getId() + " has been delivered. Enjoy your meal!";
+            } else {
+                msg = "Your order " + order.getId() + " is now " + newStatus;
+            }
+            notificationService.send(order.getCustomer().getId(), msg);
+        }
+        return order;
+    }
+
+    /** @return every order, used by the manager screen */
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
     }
 
     /**
