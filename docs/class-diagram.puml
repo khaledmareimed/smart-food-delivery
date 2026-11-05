@@ -1,5 +1,5 @@
 @startuml
-title Smart Food Delivery - Class Diagram (Sprint 1)
+title Smart Food Delivery - Class Diagram (Sprints 1-2)
 skinparam classAttributeIconSize 0
 
 package presentation {
@@ -15,22 +15,41 @@ package service {
     +getOpenRestaurants(): List<Restaurant>
     +getAvailableMenu(restaurantId): List<MenuItem>
   }
+  class OrderService {
+    +placeOrder(customer, restaurantId, lines, address): Order
+    +cancelOrder(orderId): Order
+    +getOrder(orderId): Order
+    +getOrdersFor(customer): List<Order>
+  }
+  class OrderLineRequest {
+    -menuItemId: String
+    -quantity: int
+  }
 }
 package repository {
-  interface UserRepository {
-    +save(User)
-    +findByUsername(String): Optional<User>
-  }
-  interface RestaurantRepository {
-    +save(Restaurant)
-    +findById(String): Optional<Restaurant>
-    +findAll(): List<Restaurant>
+  interface UserRepository
+  interface RestaurantRepository
+  interface OrderRepository {
+    +save(Order)
+    +findById(String): Optional<Order>
+    +findByCustomerId(String): List<Order>
   }
   class InMemoryUserRepository
   class InMemoryRestaurantRepository
+  class InMemoryOrderRepository
 }
 package domain {
   enum Role { CUSTOMER\nMANAGER }
+  enum OrderStatus {
+    PENDING
+    CONFIRMED
+    PREPARING
+    READY
+    OUT_FOR_DELIVERY
+    DELIVERED
+    CANCELLED
+    +isCancellable(): boolean
+  }
   class User {
     -id: String
     -username: String
@@ -40,7 +59,11 @@ package domain {
     -id: String
     -name: String
     -open: boolean
+    -deliveryRadiusKm: double
+    -minimumOrderValue: BigDecimal
     +getAvailableMenuItems(): List<MenuItem>
+    +findMenuItem(id): Optional<MenuItem>
+    +isWithinDeliveryZone(Location): boolean
   }
   class MenuItem {
     -id: String
@@ -48,14 +71,56 @@ package domain {
     -price: BigDecimal
     -available: boolean
   }
+  class Location {
+    -x: double
+    -y: double
+    +distanceTo(Location): double
+  }
+  class DeliveryAddress {
+    -street: String
+    +isValid(): boolean
+  }
+  class OrderItem {
+    -unitPrice: BigDecimal
+    -quantity: int
+    +getSubtotal(): BigDecimal
+  }
+  class Order {
+    -id: String
+    -status: OrderStatus
+    +getItemsTotal(): BigDecimal
+    +cancel()
+  }
+}
+package exception {
+  class InvalidOrderException
+  class DeliveryPolicyException
+  class InvalidOrderStateException
+  class ResourceNotFoundException
+  class AuthenticationException
 }
 
 ConsoleUI --> AuthService
 ConsoleUI --> RestaurantService
+ConsoleUI --> OrderService
 AuthService --> UserRepository
 RestaurantService --> RestaurantRepository
+OrderService --> RestaurantRepository
+OrderService --> OrderRepository
+OrderService ..> OrderLineRequest
+OrderService ..> InvalidOrderException
+OrderService ..> DeliveryPolicyException
+Order ..> InvalidOrderStateException
 InMemoryUserRepository ..|> UserRepository
 InMemoryRestaurantRepository ..|> RestaurantRepository
+InMemoryOrderRepository ..|> OrderRepository
 User --> Role
 Restaurant "1" *-- "*" MenuItem : menu
+Restaurant --> Location
+DeliveryAddress --> Location
+Order --> User : customer
+Order --> Restaurant
+Order --> DeliveryAddress
+Order --> OrderStatus
+Order "1" *-- "1..*" OrderItem
 @enduml

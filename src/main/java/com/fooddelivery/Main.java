@@ -2,11 +2,13 @@ package com.fooddelivery;
 
 import com.fooddelivery.config.DataSeeder;
 import com.fooddelivery.presentation.ConsoleUI;
+import com.fooddelivery.repository.InMemoryOrderRepository;
 import com.fooddelivery.repository.InMemoryRestaurantRepository;
 import com.fooddelivery.repository.InMemoryUserRepository;
 import com.fooddelivery.repository.RestaurantRepository;
 import com.fooddelivery.repository.UserRepository;
 import com.fooddelivery.service.AuthService;
+import com.fooddelivery.service.OrderService;
 import com.fooddelivery.service.RestaurantService;
 
 /**
@@ -26,7 +28,9 @@ public final class Main {
         DataSeeder.seed(users, restaurants);
 
         ConsoleUI ui = new ConsoleUI(new AuthService(users),
-                new RestaurantService(restaurants), System.in, System.out);
+                new RestaurantService(restaurants),
+                new OrderService(restaurants, new InMemoryOrderRepository()),
+                System.in, System.out);
         ui.run();
     }
 }
