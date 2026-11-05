@@ -19,7 +19,6 @@ import com.fooddelivery.service.RestaurantService;
 import com.fooddelivery.util.SystemTimeProvider;
 
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 
 /**
  * Application entry point: wires the layers together and opens the Swing window.
@@ -41,6 +40,9 @@ public final class Main {
         if (drivers.findAll().isEmpty()) {
             DataSeeder.seedDrivers(drivers);
         }
+        if (!users.findByUsername("omar").isPresent()) {
+            DataSeeder.seedDriverUsers(users);
+        }
         DatabaseNotificationService notifications = new DatabaseNotificationService(db);
         final AuthService auth = new AuthService(users);
         final RestaurantService restaurantService = new RestaurantService(restaurants);
@@ -51,12 +53,10 @@ public final class Main {
                 new SqlitePaymentRepository(db), new CashRegister());
         final DriverService driverService = new DriverService(drivers, orders, notifications);
 
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            // default look and feel is fine
-        }
-        SwingUtilities.invokeLater(() -> new MainFrame(auth, restaurantService, orderService,
-                driverService, notifications, paymentService).setVisible(true));
+        SwingUtilities.invokeLater(() -> {
+            MainFrame.installTheme();
+            new MainFrame(auth, restaurantService, orderService,
+                driverService, notifications, paymentService).setVisible(true);
+        });
     }
 }
