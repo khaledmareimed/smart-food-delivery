@@ -7,11 +7,16 @@ import com.fooddelivery.repository.SqliteDriverRepository;
 import com.fooddelivery.repository.SqliteOrderRepository;
 import com.fooddelivery.repository.SqliteRestaurantRepository;
 import com.fooddelivery.repository.SqliteUserRepository;
+import com.fooddelivery.repository.SqlitePaymentRepository;
 import com.fooddelivery.service.AuthService;
+import com.fooddelivery.service.CashRegister;
 import com.fooddelivery.service.DatabaseNotificationService;
 import com.fooddelivery.service.DriverService;
 import com.fooddelivery.service.OrderService;
+import com.fooddelivery.service.PaymentService;
+import com.fooddelivery.service.PricingService;
 import com.fooddelivery.service.RestaurantService;
+import com.fooddelivery.util.SystemTimeProvider;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -39,7 +44,10 @@ public final class Main {
         DatabaseNotificationService notifications = new DatabaseNotificationService(db);
         final AuthService auth = new AuthService(users);
         final RestaurantService restaurantService = new RestaurantService(restaurants);
-        final OrderService orderService = new OrderService(restaurants, orders, notifications);
+        final OrderService orderService = new OrderService(restaurants, orders, notifications,
+                drivers, new PricingService(new SystemTimeProvider()));
+        final PaymentService paymentService = new PaymentService(orders,
+                new SqlitePaymentRepository(db), new CashRegister());
         final DriverService driverService = new DriverService(drivers, orders, notifications);
 
         try {
@@ -48,6 +56,6 @@ public final class Main {
             // default look and feel is fine
         }
         SwingUtilities.invokeLater(() -> new MainFrame(auth, restaurantService, orderService,
-                driverService, notifications).setVisible(true));
+                driverService, notifications, paymentService).setVisible(true));
     }
 }
