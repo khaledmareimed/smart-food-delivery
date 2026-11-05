@@ -158,6 +158,10 @@ public class OrderService {
     public Order cancelOrder(String orderId) {
         Order order = getOrder(orderId);
         order.cancel();
+        if (order.getDriver() != null && driverRepository != null) {
+            order.getDriver().setStatus(DriverStatus.AVAILABLE);
+            driverRepository.save(order.getDriver());
+        }
         orderRepository.save(order);
         if (notificationService != null) {
             notificationService.send(order.getCustomer().getId(),
@@ -194,6 +198,47 @@ public class OrderService {
             notificationService.send(order.getCustomer().getId(), msg);
         }
         return order;
+    }
+
+    /**
+     * Status change made by the driver from the driver screen. Drivers can
+     * only pick up (Out for Delivery) and deliver their own orders.
+     */
+    public Order updateStatusByDriver(String driverId, String orderId, OrderStatus newStatus) {
+        Order order = getOrder(orderId);
+        if (order.getDriver() == null || !order.getDriver().getId().equals(driverId)) {
+            throw new InvalidOrderStateException("Order " + orderId + " is not assigned to you");
+        }
+        if (newStatus != OrderStatus.OUT_FOR_DELIVERY && newStatus != OrderStatus.DELIVERED) {
+            throw new InvalidOrderStateException("Drivers can only pick up or deliver orders");
+        }
+        return updateStatus(orderId, newStatus);
+    }
+
+    /** @return the status after the given one, or null if there is none */
+    public OrderStatus nextStatus(OrderStatus status) {
+        if (status == OrderStatus.PENDING) {
+            return OrderStatus.CONFIRMED;
+        } else if (status == OrderStatus.CONFIRMED) {
+            return OrderStatus.PREPARING;
+        } else if (status == OrderStatus.PREPARING) {
+            return OrderStatus.READY;
+        } else if (status == OrderStatus.READY) {
+            return OrderStatus.OUT_FOR_DELIVERY;
+        } else if (status == OrderStatus.OUT_FOR_DELIVERY) {
+            return OrderStatus.DELIVERED;
+        }
+        return null;
+    }
+
+    /** Moves the order one step forward in its lifecycle. */
+    public Order advanceStatus(String orderId) {
+        Order order = getOrder(orderId);
+        OrderStatus next = nextStatus(order.getStatus());
+        if (next == null) {
+            throw new InvalidOrderStateException("Order " + orderId + " is already " + order.getStatus());
+        }
+        return updateStatus(orderId, next);
     }
 
     /** @return every order, used by the manager screen */
