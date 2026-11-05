@@ -1,0 +1,92 @@
+@startuml
+!pragma layout smetana
+title SQLite Database Schema
+hide circle
+skinparam linetype ortho
+
+entity users {
+  * id : TEXT <<PK>>
+  --
+  username : TEXT <<UNIQUE>>
+  password_hash : TEXT
+  role : TEXT
+}
+entity restaurants {
+  * id : TEXT <<PK>>
+  --
+  name : TEXT
+  open : INTEGER
+  x : REAL
+  y : REAL
+  radius : REAL
+  min_order : TEXT
+}
+entity menu_items {
+  * id : TEXT <<PK>>
+  --
+  restaurant_id : TEXT <<FK>>
+  name : TEXT
+  price : TEXT
+  available : INTEGER
+}
+entity orders {
+  * id : TEXT <<PK>>
+  --
+  customer_id : TEXT <<FK>>
+  restaurant_id : TEXT <<FK>>
+  driver_id : TEXT <<FK>>
+  street : TEXT
+  x : REAL
+  y : REAL
+  status : TEXT
+  pricing_type : TEXT
+  delivery_fee : TEXT
+  discount : TEXT
+  total : TEXT
+  payment_status : TEXT
+  order_type : TEXT
+  scheduled_time : TEXT
+}
+entity order_items {
+  order_id : TEXT <<FK>>
+  menu_item_id : TEXT
+  --
+  name : TEXT
+  unit_price : TEXT
+  quantity : INTEGER
+}
+entity drivers {
+  * id : TEXT <<PK>>
+  --
+  name : TEXT
+  x : REAL
+  y : REAL
+  speed : REAL
+  status : TEXT
+  type : TEXT
+  battery_range : REAL
+}
+entity payments {
+  * id : TEXT <<PK>>
+  --
+  order_id : TEXT <<FK>>
+  method : TEXT
+  amount : TEXT
+  change_given : TEXT
+  status : TEXT
+}
+entity notifications {
+  * id : INTEGER <<PK>>
+  --
+  user_id : TEXT <<FK>>
+  message : TEXT
+}
+
+restaurants ||--o{ menu_items
+restaurants ||--o{ orders
+users ||--o{ orders
+drivers |o--o{ orders
+orders ||--|{ order_items
+orders ||--o{ payments
+users ||--o{ notifications
+@enduml
