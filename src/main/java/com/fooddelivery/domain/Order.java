@@ -20,6 +20,7 @@ public class Order {
     private final List<OrderItem> items;
     private final DeliveryAddress deliveryAddress;
     private OrderStatus status = OrderStatus.PENDING;
+    private Driver driver;
 
     /**
      * Creates a pending order.
@@ -89,6 +90,20 @@ public class Order {
             throw new IllegalArgumentException("Status must not be null");
         }
         this.status = status;
+    }
+
+    /** @return the assigned driver, or {@code null} if none yet */
+    public Driver getDriver() {
+        return driver;
+    }
+
+    /**
+     * Records the driver delivering this order.
+     *
+     * @param driver the assigned driver
+     */
+    public void setDriver(Driver driver) {
+        this.driver = driver;
     }
 
     /**
