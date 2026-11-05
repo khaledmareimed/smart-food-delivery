@@ -23,19 +23,21 @@ public class SqliteOrderRepository implements OrderRepository {
     private Database db;
     private SqliteUserRepository users;
     private SqliteRestaurantRepository restaurants;
+    private SqliteDriverRepository drivers;
 
     public SqliteOrderRepository(Database db) {
         this.db = db;
         this.users = new SqliteUserRepository(db);
         this.restaurants = new SqliteRestaurantRepository(db);
+        this.drivers = new SqliteDriverRepository(db);
     }
 
     @Override
     public void save(Order o) {
         try {
             PreparedStatement ps = db.getConnection().prepareStatement(
-                    "INSERT OR REPLACE INTO orders(id, customer_id, restaurant_id, street, x, y, status) "
-                            + "VALUES (?,?,?,?,?,?,?)");
+                    "INSERT OR REPLACE INTO orders(id, customer_id, restaurant_id, street, x, y, status, "
+                            + "driver_id) VALUES (?,?,?,?,?,?,?,?)");
             ps.setString(1, o.getId());
             ps.setString(2, o.getCustomer().getId());
             ps.setString(3, o.getRestaurant().getId());
@@ -43,6 +45,11 @@ public class SqliteOrderRepository implements OrderRepository {
             ps.setDouble(5, o.getDeliveryAddress().getLocation().getX());
             ps.setDouble(6, o.getDeliveryAddress().getLocation().getY());
             ps.setString(7, o.getStatus().name());
+            if (o.getDriver() != null) {
+                ps.setString(8, o.getDriver().getId());
+            } else {
+                ps.setString(8, null);
+            }
             ps.executeUpdate();
             ps.close();
 
@@ -99,7 +106,8 @@ public class SqliteOrderRepository implements OrderRepository {
             List<double[]> coords = new ArrayList<>();
             while (rs.next()) {
                 rows.add(new String[] {rs.getString("id"), rs.getString("customer_id"),
-                        rs.getString("restaurant_id"), rs.getString("street"), rs.getString("status")});
+                        rs.getString("restaurant_id"), rs.getString("street"), rs.getString("status"),
+                        rs.getString("driver_id")});
                 coords.add(new double[] {rs.getDouble("x"), rs.getDouble("y")});
             }
             rs.close();
@@ -112,6 +120,9 @@ public class SqliteOrderRepository implements OrderRepository {
                         new Location(coords.get(i)[0], coords.get(i)[1]));
                 Order order = new Order(row[0], customer, restaurant, loadItems(row[0]), address);
                 order.setStatus(OrderStatus.valueOf(row[4]));
+                if (row[5] != null) {
+                    order.setDriver(drivers.findById(row[5]).orElse(null));
+                }
                 result.add(order);
             }
         } catch (SQLException e) {

@@ -53,10 +53,14 @@ public class Database {
                 + "price TEXT NOT NULL, available INTEGER NOT NULL)");
         st.executeUpdate("CREATE TABLE IF NOT EXISTS orders ("
                 + "id TEXT PRIMARY KEY, customer_id TEXT NOT NULL, restaurant_id TEXT NOT NULL, "
-                + "street TEXT, x REAL, y REAL, status TEXT NOT NULL)");
+                + "street TEXT, x REAL, y REAL, status TEXT NOT NULL, driver_id TEXT)");
         st.executeUpdate("CREATE TABLE IF NOT EXISTS order_items ("
                 + "order_id TEXT NOT NULL, menu_item_id TEXT NOT NULL, name TEXT, "
                 + "unit_price TEXT, quantity INTEGER)");
+        st.executeUpdate("CREATE TABLE IF NOT EXISTS drivers ("
+                + "id TEXT PRIMARY KEY, name TEXT NOT NULL, x REAL, y REAL, speed REAL, status TEXT)");
+        st.executeUpdate("CREATE TABLE IF NOT EXISTS notifications ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, message TEXT)");
         st.close();
     }
 }
