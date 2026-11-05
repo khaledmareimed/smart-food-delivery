@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,8 +38,8 @@ public class SqliteOrderRepository implements OrderRepository {
         try {
             PreparedStatement ps = db.getConnection().prepareStatement(
                     "INSERT OR REPLACE INTO orders(id, customer_id, restaurant_id, street, x, y, status, "
-                            + "driver_id, pricing_type, delivery_fee, discount, total, payment_status) "
-                            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                            + "driver_id, pricing_type, delivery_fee, discount, total, payment_status, order_type, "
+                            + "scheduled_time) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
             ps.setString(1, o.getId());
             ps.setString(2, o.getCustomer().getId());
             ps.setString(3, o.getRestaurant().getId());
@@ -56,6 +57,8 @@ public class SqliteOrderRepository implements OrderRepository {
             ps.setString(11, o.getDiscount().toPlainString());
             ps.setString(12, o.getTotal().toPlainString());
             ps.setString(13, o.getPaymentStatus());
+            ps.setString(14, o.getOrderType());
+            ps.setString(15, o.getScheduledTime() == null ? null : o.getScheduledTime().toString());
             ps.executeUpdate();
             ps.close();
 
@@ -115,7 +118,8 @@ public class SqliteOrderRepository implements OrderRepository {
                         rs.getString("restaurant_id"), rs.getString("street"), rs.getString("status"),
                         rs.getString("driver_id"), rs.getString("pricing_type"),
                         rs.getString("delivery_fee"), rs.getString("discount"), rs.getString("total"),
-                        rs.getString("payment_status")});
+                        rs.getString("payment_status"), rs.getString("order_type"),
+                        rs.getString("scheduled_time")});
                 coords.add(new double[] {rs.getDouble("x"), rs.getDouble("y")});
             }
             rs.close();
@@ -136,6 +140,10 @@ public class SqliteOrderRepository implements OrderRepository {
                 order.setDiscount(new BigDecimal(row[8]));
                 order.setTotal(new BigDecimal(row[9]));
                 order.setPaymentStatus(row[10]);
+                order.setOrderType(row[11]);
+                if (row[12] != null) {
+                    order.setScheduledTime(LocalDateTime.parse(row[12]));
+                }
                 result.add(order);
             }
         } catch (SQLException e) {

@@ -68,4 +68,18 @@ class RestaurantServiceTest {
         when(repository.findById("nope")).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class, () -> service.getAvailableMenu("nope"));
     }
+
+    @Test
+    void managerCanCloseRestaurantAndHideItem() {
+        Restaurant r = new Restaurant("r1", "Pizza", true);
+        r.addMenuItem(new MenuItem("m1", "Margherita", new BigDecimal("30"), true));
+        when(repository.findById("r1")).thenReturn(Optional.of(r));
+
+        service.setRestaurantOpen("r1", false);
+        service.setMenuItemAvailable("r1", "m1", false);
+
+        assertFalse(r.isOpen());
+        assertFalse(r.getMenu().get(0).isAvailable());
+        verify(repository, times(2)).save(r);
+    }
 }
