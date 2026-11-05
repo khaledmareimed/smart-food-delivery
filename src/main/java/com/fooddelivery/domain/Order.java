@@ -21,6 +21,11 @@ public class Order {
     private final DeliveryAddress deliveryAddress;
     private OrderStatus status = OrderStatus.PENDING;
     private Driver driver;
+    private String pricingType = "NORMAL";
+    private BigDecimal deliveryFee = BigDecimal.ZERO;
+    private BigDecimal discount = BigDecimal.ZERO;
+    private BigDecimal total;
+    private String paymentStatus = "UNPAID";
 
     /**
      * Creates a pending order.
@@ -116,6 +121,102 @@ public class Order {
             total = total.add(item.getSubtotal());
         }
         return total;
+    }
+
+    /**
+     * Moves the order to the next state of its lifecycle
+     * (Pending, Confirmed, Preparing, Ready, Out for Delivery, Delivered).
+     *
+     * @param newStatus the requested status
+     * @throws InvalidOrderStateException if the transition is not allowed
+     */
+    public void changeStatus(OrderStatus newStatus) {
+        if (newStatus == null) {
+            throw new IllegalArgumentException("Status must not be null");
+        }
+        if (status == OrderStatus.DELIVERED) {
+            throw new InvalidOrderStateException("Order " + id + " is delivered and cannot be modified");
+        }
+        if (status == OrderStatus.CANCELLED) {
+            throw new InvalidOrderStateException("Order " + id + " is cancelled and cannot be modified");
+        }
+        if (newStatus == OrderStatus.CANCELLED) {
+            cancel();
+            return;
+        }
+        boolean ok = false;
+        if (status == OrderStatus.PENDING && newStatus == OrderStatus.CONFIRMED) {
+            ok = true;
+        } else if (status == OrderStatus.CONFIRMED && newStatus == OrderStatus.PREPARING) {
+            ok = true;
+        } else if (status == OrderStatus.PREPARING && newStatus == OrderStatus.READY) {
+            ok = true;
+        } else if (status == OrderStatus.READY && newStatus == OrderStatus.OUT_FOR_DELIVERY) {
+            ok = true;
+        } else if (status == OrderStatus.OUT_FOR_DELIVERY && newStatus == OrderStatus.DELIVERED) {
+            ok = true;
+        }
+        if (!ok) {
+            throw new InvalidOrderStateException("Cannot change order " + id + " from "
+                    + status + " to " + newStatus);
+        }
+        status = newStatus;
+    }
+
+    /** @return the pricing type used for the bill */
+    public String getPricingType() {
+        return pricingType;
+    }
+
+    /** @param pricingType the pricing type used for the bill */
+    public void setPricingType(String pricingType) {
+        this.pricingType = pricingType;
+    }
+
+    /** @return the delivery fee */
+    public BigDecimal getDeliveryFee() {
+        return deliveryFee;
+    }
+
+    /** @param deliveryFee the delivery fee */
+    public void setDeliveryFee(BigDecimal deliveryFee) {
+        this.deliveryFee = deliveryFee;
+    }
+
+    /** @return the discount taken off the bill */
+    public BigDecimal getDiscount() {
+        return discount;
+    }
+
+    /** @param discount the discount taken off the bill */
+    public void setDiscount(BigDecimal discount) {
+        this.discount = discount;
+    }
+
+    /**
+     * @return the final bill (items + delivery fee - discount). If pricing was
+     *         never applied this is the items total plus the delivery fee.
+     */
+    public BigDecimal getTotal() {
+        if (total == null) {
+            return getItemsTotal().add(deliveryFee).subtract(discount);
+        }
+        return total;
+    }
+
+    /** @param total the final bill */
+    public void setTotal(BigDecimal total) {
+        this.total = total;
+    }
+
+    /** @return "UNPAID" or "PAID" */
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    /** @param paymentStatus "UNPAID" or "PAID" */
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
     }
 
     /**
